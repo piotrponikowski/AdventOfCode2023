@@ -23,5 +23,5 @@ class Day1(private val input: List<String>) {
 
     fun part1() = input.sumOf { line -> findFirst(line, digits) * 10 + findLast(line, digits) }
 
-    fun part2() = input.sumOf { line -> findFirst(line, allWords) * 10  +findLast(line, allWords) }
+    fun part2() = input.sumOf { line -> findFirst(line, allWords) * 10 + findLast(line, allWords) }
 }

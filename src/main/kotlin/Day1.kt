@@ -1,16 +1,16 @@
 class Day1(private val input: List<String>) {
 
     private val digits = (1..9).map { digit -> digit.toString() }
-    private val words = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
-    private val allWords = digits + words
+    private val numbers = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    private val allWords = digits + numbers
 
-    private fun findFirst(line: String, numbers: List<String>) = numbers
+    private fun findFirst(line: String, words: List<String>) = words
         .filter { digit -> line.contains(digit) }
         .map { digit -> line.indexOf(digit) to digit }
         .minBy { (index, _) -> index }
         .let { (_, digit) -> toInt(digit) }
 
-    private fun findLast(line: String, numbers: List<String>) = numbers
+    private fun findLast(line: String, words: List<String>) = words
         .filter { digit -> line.contains(digit) }
         .map { digit -> line.lastIndexOf(digit) to digit }
         .maxBy { (index, _) -> index }
@@ -18,7 +18,7 @@ class Day1(private val input: List<String>) {
 
     private fun toInt(number: String) = when (number) {
         in digits -> number.toInt()
-        else -> words.indexOf(number) + 1
+        else -> numbers.indexOf(number) + 1
     }
 
     fun part1() = input.sumOf { line -> findFirst(line, digits) * 10 + findLast(line, digits) }

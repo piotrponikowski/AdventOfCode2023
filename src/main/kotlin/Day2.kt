@@ -1,58 +1,65 @@
 import kotlin.math.max
 
-class Day2(val input: List<String>) {
+class Day2(input: List<String>) {
 
+    private val games = parseGames(input)
 
-    fun part1() {
-        val test = parse()
-        val test2 = test.filter { it.isPossible() }.map { it.id }.sum()
-        println(test2)
+    fun part1() = games.filter { game -> game.isPossible() }.sumOf { game -> game.id }
+
+    fun part2() = games.sumOf { game ->
+        game.minCubes()
+            .map { (_, count) -> count }
+            .reduce { result, count -> result * count }
     }
 
-    fun part2() {
-        val test = parse()
-        val test2 = test.map { it.power() }
-        println(test2.sum())
+    private fun parseGames(input: List<String>) = input.map { line ->
+        val (gameInput, subGamesInput) = line.split(":")
+
+        val gameId = gameInput.split(" ").last().toInt()
+        val subGames = subGamesInput.split(";").map { subGameInput -> parseSubGame(subGameInput) }
+
+        Game(gameId, subGames)
     }
 
-    fun parse() = input.map { line ->
-        val game = line.split(":").first()
-        val cubes = line.split(":").last().split(";")
+    private fun parseSubGame(subGameInput: String) = subGameInput.split(",")
+        .map { cubesInput -> cubesInput.trim().split(" ") }
+        .map { (count, color) -> Cube(color, count.toInt()) }
+        .let { cubes -> SubGame(cubes) }
 
-        val id = game.split(" ").last().toInt()
+    data class Game(val id: Int, val subGames: List<SubGame>) {
+        fun isPossible() = subGames.all { subGame -> subGame.isPossible() }
 
-        val cubes2 = cubes.map { group ->
-            group.split(",").map { it.trim() }
-                .map { it.split(" ") }
-                .map { (a, b) -> Cubes(b, a.toInt()) }
+        fun minCubes(): Map<String, Int> {
+            val result = mutableMapOf<String, Int>()
+            subGames.forEach { subGame ->
+                subGame.cubes.forEach { cube ->
+                    result[cube.color] = max(result[cube.color] ?: 0, cube.count)
+
+                }
+            }
+
+            return result
         }
-
-        Game(id, cubes2)
     }
 
+    data class SubGame(val cubes: List<Cube>) {
+        fun isPossible() = cubes.all { cube -> cube.isPossible() }
+    }
 
-    data class Game(val id: Int, val cubes: List<List<Cubes>>) {
+    data class Cube(val color: String, val count: Int) {
 
-        fun isPossible() = cubes.all { a -> a.all { b -> colors[b.color]!! >= b.count } }
-
-        fun power():Int {
-            val maxes = mutableMapOf<String, Int>()
-            cubes.forEach { a -> a.forEach { b -> maxes[b.color] = max((maxes[b.color] ?: 0), b.count) } }
-            return maxes.values.reduce { a, b -> a*b}
-        }
+        fun isPossible() = MAX_CUBES[color]!! >= count
 
         companion object {
-            val colors = mapOf("red" to 12, "green" to 13, "blue" to 14)
+            private val MAX_CUBES = mapOf("red" to 12, "green" to 13, "blue" to 14)
         }
     }
-
-    data class Cubes(val color: String, val count: Int)
 }
 
 fun main() {
 //    val input = readText("day2.txt", true)
-    val input = readLines("day2.txt")
+    val input = readLines("day2.txt", true)
 
-    val result = Day2(input).part2()
+    val result = Day2(input).part1()
     println(result)
 }

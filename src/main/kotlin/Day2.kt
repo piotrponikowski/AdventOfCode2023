@@ -1,5 +1,3 @@
-import kotlin.math.max
-
 class Day2(input: List<String>) {
 
     private val games = parseGames(input)

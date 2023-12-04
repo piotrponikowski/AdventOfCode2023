@@ -1,59 +1,39 @@
+import kotlin.math.pow
+
 class Day4(input: List<String>) {
 
-    val cards = input.map { line -> parseCard(line) }
+    private val cards = input.map { line -> Card.parse(line) }
 
-    fun part1() = cards.map { it.score() }.sum()
+    fun part1() = cards.sumOf { card -> card.score() }
 
-    fun part2():Int {
-        var total = cards.size
-        var currentCards = step(cards)
-        while(currentCards.isNotEmpty()) {
-            total += currentCards.size
-            currentCards = step(currentCards.map { cards[it-1] })
-        }
-        
-//        val grouped = currentCards.groupBy { it }
-//        val nextCards = grouped.keys.map { cards[it-1] }
-        println()
-        return total
-    }
-    
-    private fun step(currentCards: List<Card>) =currentCards.flatMap { card -> card.win() }
-    
+    fun part2(): Int {
+        val scratchedCards = cards.map { card -> card.id }.associateWith { 1 }.toMutableMap()
 
-    private fun parseCard(input: String): Card {
-        val (left, right) = input.split(":")
-        val id = left.split(" ").last().toInt()
-        val (winning, have) = right.split("|")
-        val winningNumbers = winning.split(" ").filter { it.isNotBlank() }.map { it.toInt() }
-        val haveNumbers = have.split(" ").filter { it.isNotBlank() }.map { it.toInt() }
-        return Card(id, winningNumbers, haveNumbers)
-    }
-
-    data class Card(val id: Int, val winning: List<Int>, val have: List<Int>) {
-        fun score(): Int {
-            val size = winning.intersect(have).size
-            if (size == 0) {
-                return 0
-            } else if (size == 1) {
-                return 1
-            } else {
-                return (1..<size).fold(1) { a, b -> a * 2 }
+        cards.forEach { card ->
+            val cardCount = scratchedCards[card.id]!!
+            card.winCards().forEach { newCardId ->
+                scratchedCards.compute(newCardId) { _, scratchedCount -> (scratchedCount ?: 0) + cardCount }
             }
         }
 
-        fun win(): List<Int> {
-            val size = winning.intersect(have).size
-            return ((id)+1..(id+size)).toList()
-        }
+        return scratchedCards.values.sum()
     }
 
-}
+    data class Card(val id: Int, val winning: Set<Int>, val have: Set<Int>) {
+        fun score() = 2.0.pow(winning.intersect(have).size - 1).toInt()
 
-fun main() {
-//    val input = readText("day4.txt", true)
-    val input = readLines("day4.txt")
+        fun winCards() = ((id) + 1..(id + winning.intersect(have).size)).toList()
 
-    val result = Day4(input).part2()
-    println(result)
+        companion object {
+            fun parse(input: String): Card {
+                val (card, winning, have) = input.split(":", "|")
+
+                val id = card.split(" ").last().toInt()
+                val winningIds = winning.split(" ").filter { it.isNotBlank() }.map { it.toInt() }
+                val haveIds = have.split(" ").filter { it.isNotBlank() }.map { it.toInt() }
+
+                return Card(id, winningIds.toSet(), haveIds.toSet())
+            }
+        }
+    }
 }

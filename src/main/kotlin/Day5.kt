@@ -32,18 +32,15 @@ class Day5(val input: String) {
             groups.forEach { group ->
                 currentValue = group.convert(currentValue)
             }
-            println("$seed -> $currentValue")
             results.add(seed to currentValue)
         }
         val results2 = results.sortedBy { it.second }
 
-        val seed2 = results2.first().first
+        val seed2 = results2.first().second
 //        val range = groupedSeeds.find { (a, b) -> (seed2 >= a && seed2 < a + b) }
 
         println(seed2)
 //        println(range)
-        
-        println(results2.take(100))
         
         //6082852
         return seed2

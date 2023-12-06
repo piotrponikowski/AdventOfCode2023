@@ -1,107 +1,62 @@
 import kotlin.math.sqrt
 
-class Day5(val input: String) {
+class Day5(input: String) {
 
+    private val seeds = parseSeeds(input)
+    private val groups = parseGroups(input)
 
-    fun part1():Long {
-        val (seeds, groups) = parse()
-        var results = mutableListOf<Long>()
+    fun part1() = seeds.minOfOrNull { seed -> processSeed(seed) }!!
 
-        seeds.forEach { seed ->
-            var currentValue = seed
-            groups.forEach { group ->
-                currentValue = group.convert(currentValue)
-            }
-            println()
-            results.add(currentValue)
-        }
-        return results.min()
+    fun part2():Long {
+        val bestSeed = splitSeeds()
+            .map { seed -> seed to processSeed(seed) }
+            .sortedBy { (_, location) -> location }
+            .map { (seed, _) -> seed }
+            .first()
+
+        val scanRange = scanRange()
+        val minSeed = bestSeed - scanRange
+        val maxSeed = bestSeed + scanRange
+
+        return (minSeed..maxSeed)
+            .filter { seed -> validSeed(seed) }
+            .minOfOrNull { seed -> processSeed(seed) }!!
     }
 
-    fun part2() :Long {
-        val (seeds, groups) = parse()
-        var results = mutableListOf<Pair<Long, Long>>()
-//        val groupedSeeds = seeds.windowed(2, 2)
-//        val groupedSeeds = listOf<Pair<Long, Long>>(544909935L-40000 to 544909935L)
-//        val groupedSeeds2 = groupedSeeds.flatMap { (a, b) -> toTest(a, b) }.toSet()
+    private fun splitSeeds() = seeds.windowed(2, 2)
+        .map { (start, range) -> start to (start + range - 1) }
+        .flatMap { (start, end) -> (start..end step sqrt(start.toDouble()).toLong()).toList() + end }
 
-        val groupedSeeds2= ((544909935L-40000 .. 544909935L)).toList()
-        
-        groupedSeeds2.forEach { seed ->
-            var currentValue = seed
-            groups.forEach { group ->
-                currentValue = group.convert(currentValue)
-            }
-            results.add(seed to currentValue)
-        }
-        val results2 = results.sortedBy { it.second }
+    private fun validSeed(seed: Long) = seeds.windowed(2, 2)
+        .any { (start, range) -> seed in (start..<start + range) }
+    
+    private fun scanRange() = seeds.windowed(2, 2)
+        .maxOfOrNull { (start, _) -> sqrt(start.toDouble()).toLong() }!!
 
-        val seed2 = results2.first().second
-//        val range = groupedSeeds.find { (a, b) -> (seed2 >= a && seed2 < a + b) }
+    private fun processSeed(seed: Long) = groups.fold(seed) { result, converter -> converter.convert(result) }
 
-        println(seed2)
-//        println(range)
-        
-        //6082852
-        return seed2
-    }
+    private fun parseSeeds(input: String) = groupLines(input).first().first()
+        .split(":").last().trim()
+        .split(" ").map { seed -> seed.toLong() }
 
-    fun parse(): Pair<List<Long>, List<Group>> {
-        val groups1 = input.split("\r\n\r\n");
-        val seeds = groups1.first().split(":").last().split(" ").filter { it.isNotBlank() }.map { it.toLong() }
-        val maps = groups1.drop(1)
-            .map { it.split("\r\n").drop(1).map { it.split(" ").filter { it.isNotBlank() }.map { it.toLong() } } }
+    private fun parseGroups(input: String) = groupLines(input).drop(1)
+        .map { converters -> converters.drop(1).map { converter -> parseConverter(converter) } }
+        .map { converters -> Group(converters) }
 
-
-        val groups =
-            maps.map { Group(it.map { (destination, source, range) -> Converter(destination, source, range) }) }
-        return seeds to groups
-    }
-
-    fun toTest(a: Long, b: Long): List<Long> {
-        val result = mutableListOf<Long>()
-        val diff = sqrt(a.toDouble()).toInt()
-        var start = a
-        var last = a + b - 1
-        var current = start
-
-        while (current < last) {
-            result += current
-            current += diff
-        }
-        result.add(last)
-        return result
-    }
+    private fun parseConverter(input: String) = input
+        .split(" ")
+        .map { number -> number.toLong() }
+        .let { (destination, source, range) -> Converter(destination, source, range) }
 
     data class Group(val converters: List<Converter>) {
 
-        fun convert(value: Long): Long {
-            val c = converters.find { it.matches(value) }
-            if (c != null) {
-                return c.convert(value)
-            } else {
-                return value
-            }
-        }
+        fun convert(value: Long) = converters.find { converter -> converter.matches(value) }?.convert(value) ?: value
     }
 
     data class Converter(val destination: Long, val source: Long, val range: Long) {
 
-        fun matches(value: Long): Boolean {
-            return value in (source..<source + range)
-        }
+        fun matches(value: Long) = value in (source..<source + range)
 
-        fun convert(value: Long): Long {
-            val diff = destination - source
-            return value + diff
-        }
+        fun convert(value: Long) = value + (destination - source)
     }
-}
-
-fun main() {
-    val input = readText("day5.txt")
-//    val input = readLines("day5.txt", true)
-
-    val result = Day5(input).part2()
-    println(result)
 }

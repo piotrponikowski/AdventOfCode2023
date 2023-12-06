@@ -7,7 +7,7 @@ class Day6(input: List<String>) {
 
     fun part1() = times.zip(distances)
         .map { (raceTime, distance) -> (1..raceTime).filter { holdTime -> isWin(raceTime, holdTime, distance) }.size }
-        .reduce { acc, i -> acc * i }
+        .reduce { result, winCount -> result * winCount }
 
     fun part2(): Long {
         val raceTime = mergeNumbers(times)

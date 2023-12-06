@@ -1,38 +1,36 @@
+import kotlin.math.sqrt
+
 class Day6(input: List<String>) {
 
-    private val times = input.first().split(" ").filter { it.isNotBlank() }.drop(1).map { it.toLong() }
-    private val distances = input.last().split(" ").filter { it.isNotBlank() }.drop(1).map { it.toLong() }
-    private val races = times.zip(distances).map { (a, b) -> Race(a, b) }
-    
-    fun part1() {
-        val test = races.map { it.winScenarios().size }
-            .reduce { acc, i -> acc * i }
-        println(test)
+    private val times = parseLine(input.first())
+    private val distances = parseLine(input.last())
+
+    fun part1() = times.zip(distances)
+        .map { (raceTime, distance) -> (1..raceTime).filter { holdTime -> isWin(raceTime, holdTime, distance) }.size }
+        .reduce { acc, i -> acc * i }
+
+    fun part2(): Long {
+        val raceTime = mergeNumbers(times)
+        val distance = mergeNumbers(distances)
+
+        val scanStep = sqrt(raceTime.toDouble()).toLong()
+        val stepsToScan = (1..raceTime step scanStep)
+
+        val scanMinStep = stepsToScan.first { holdTime -> isWin(raceTime, holdTime, distance) }
+        val scanMaxStep = stepsToScan.last { holdTime -> isWin(raceTime, holdTime, distance) }
+
+        val minStep = (scanMinStep - scanStep..scanMinStep).first { holdTime -> isWin(raceTime, holdTime, distance) }
+        val maxStep = (scanMaxStep..scanMaxStep + scanStep).last { holdTime -> isWin(raceTime, holdTime, distance) }
+
+        return maxStep - minStep + 1
     }
 
-    fun part2(time: Long, distance: Long) {
-//        val toCheck  =(1..time step 100_000)
-        val toCheck = (6900001L..6950001L)
-        toCheck.forEach { println("$it ${isWin(time, it, distance)}") }
+    private fun parseLine(line: String) = line.split(" ")
+        .filter { part -> part.isNotBlank() }.drop(1)
+        .map { part -> part.toLong() }
 
-    }
+    private fun mergeNumbers(numbers: List<Long>) = numbers.fold("") { result, number -> result + number }.toLong()
 
-    fun isWin(time: Long, ms: Long, record: Long): Boolean {
-        return (time - ms) * ms > record
-    }
+    private fun isWin(raceTime: Long, holdTime: Long, distance: Long) = (raceTime - holdTime) * holdTime > distance
 
-    data class Race(val time: Long, val distance: Long) {
-
-        fun winScenarios() = (1..time).map { ms -> (time - ms) * ms }.filter { it > distance }
-    }
-}
-
-fun main() {
-//    val input = readText("day6.txt", true)
-    val input = readLines("day6.txt")
-
-//    val result = Day6(input).part2(71530L, 940200L)
-    val result = Day6(input).part2(47707566, 282107911471062L)
-
-    println(result)
 }

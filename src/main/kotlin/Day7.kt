@@ -9,8 +9,7 @@ class Day7(input: List<String>) {
     private fun solve(useJokers: Boolean) = hands.sortedBy { hand -> hand.power(useJokers) }
         .mapIndexed { index, hand -> hand.bid * (index + 1) }
         .sum()
-
-
+    
     data class Hand(val cards: List<Char>, val bid: Int) {
 
         fun power(useJokers: Boolean) = listOf(listOf(handPower(useJokers)), cardsPower(useJokers)).flatten()

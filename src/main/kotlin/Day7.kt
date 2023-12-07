@@ -1,99 +1,51 @@
 class Day7(input: List<String>) {
 
     private val hands = input.map { it.split(" ") }.map { (a, b) -> Hand(a.toList(), b.toInt()) }
+    fun part1() = solve(false)
 
-    private val cardPower = arrayOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
-    private val cardPower2 = arrayOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J')
-
-    fun part1(): Int {
-        val test = hands
-            .sortedWith(
-                compareBy(
-                    { it.power() },
-                    { -cardPower.indexOf(it.cards[0]) },
-                    { -cardPower.indexOf(it.cards[1]) },
-                    { -cardPower.indexOf(it.cards[2]) },
-                    { -cardPower.indexOf(it.cards[3]) },
-                    { -cardPower.indexOf(it.cards[4]) })
-            )
-
-        val test2 = test.mapIndexed { index, hand -> hand.bid * (index + 1) }
-
-        test.forEach { println("$it ${it.power()} ${cardPower.indexOf(it.cards[0])} ${cardPower.indexOf(it.cards[1])}") }
-
-        return test2.sum()
-    }
-
-    fun part2(): Int {
-        val test = hands
-            .sortedWith(
-                compareBy(
-                    { it.power2() },
-                    { -cardPower2.indexOf(it.cards[0]) },
-                    { -cardPower2.indexOf(it.cards[1]) },
-                    { -cardPower2.indexOf(it.cards[2]) },
-                    { -cardPower2.indexOf(it.cards[3]) },
-                    { -cardPower2.indexOf(it.cards[4]) })
-            )
-
-        val test2 = test.mapIndexed { index, hand -> hand.bid * (index + 1) }
-
-        test.forEach { println("$it ${it.power2()} ${cardPower2.indexOf(it.cards[0])} ${cardPower2.indexOf(it.cards[1])}") }
-
-        return test2.sum()
-    }
+    fun part2() = solve(true)
+    
+    private fun solve(useJokers: Boolean) = hands.sortedBy { hand -> hand.power(useJokers) }
+        .mapIndexed { index, hand -> hand.bid * (index + 1) }
+        .sum()
 
 
     data class Hand(val cards: List<Char>, val bid: Int) {
 
-        fun power(cardsToCheck: List<Char> = cards): Int {
-            val groups = cardsToCheck.groupBy { it }.mapValues { (a, b) -> b.size }
+        fun power(useJokers: Boolean) = listOf(listOf(handPower(useJokers)), cardsPower(useJokers)).flatten()
+            .joinToString { number -> number.toString().padStart(2, '0') }
+        
+        private fun handPower(useJoker: Boolean) = if (useJoker) handPowerJoker() else handPowerStandard()
 
-            if (groups.any { (key, count) -> count == 5 }) {
-                return 7
-            }
-
-            if (groups.any { (key, count) -> count == 4 }) {
-                return 6
-            }
-
-            if (groups.any { (key, count) -> count == 3 } && groups.any { (key, count) -> count == 2 }) {
-                return 5
-            }
-
-            if (groups.any { (key, count) -> count == 3 }) {
-                return 4
-            }
-
-            if (groups.count { (key, count) -> count == 2 } == 2) {
-                return 3
-            }
-
-            if (groups.count { (key, count) -> count == 2 } == 1) {
-                return 2
-            }
-
-            return 1
+        private fun handPowerStandard() = when {
+            countGroups(5) == 1 -> 7
+            countGroups(4) == 1 -> 6
+            countGroups(3) == 1 && countGroups(2) == 1 -> 5
+            countGroups(3) == 1 -> 4
+            countGroups(2) == 2 -> 3
+            countGroups(2) == 1 -> 2
+            else -> 1
         }
 
-        fun power2(): Int {
-            val newPowers = arrayOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
-                .map { replacement ->
-                    val newCards = cards.map { if (it == 'J') replacement else it }
-                    val newPower = power(newCards)
-                    newPower
-                }
+        private fun handPowerJoker() = CARDS_POWER
+            .map { replacement -> cards.map { card -> if (card == 'J') replacement else card } }
+            .map { newCards -> Hand(newCards, bid) }
+            .maxOfOrNull { hand -> hand.handPowerStandard() }!!
+        
+        private fun cardsPower(useJoker: Boolean) = if (useJoker) cardsPowerJoker() else cardsPowerStandard()
+        
+        private fun cardsPowerStandard() = cards.map { card -> CARDS_POWER.size - CARDS_POWER.indexOf(card) }
 
-            return newPowers.max()
+        private fun cardsPowerJoker() = cards.map { card -> CARDS_POWER_JOKER.size - CARDS_POWER_JOKER.indexOf(card) }
+
+        private fun countGroups(groupSize: Int) = cards
+            .groupBy { symbol -> symbol }
+            .map { (_, group) -> group.size }
+            .count { size -> size == groupSize }
+
+        companion object {
+            private val CARDS_POWER = arrayOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
+            private val CARDS_POWER_JOKER = arrayOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J')
         }
-
     }
-}
-
-fun main() {
-//    val input = readText("day7.txt", true)
-    val input = readLines("day7.txt")
-//250606082
-    val result = Day7(input).part2()
-    println(result)
 }

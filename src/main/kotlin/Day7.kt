@@ -1,6 +1,7 @@
 class Day7(input: List<String>) {
 
     private val hands = input.map { it.split(" ") }.map { (a, b) -> Hand(a.toList(), b.toInt()) }
+    
     fun part1() = solve(false)
 
     fun part2() = solve(true)

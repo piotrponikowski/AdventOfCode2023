@@ -5,40 +5,42 @@ class Day7(input: List<String>) {
     private val cardPower = arrayOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
     private val cardPower2 = arrayOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J')
 
-    fun part1() {
+    fun part1(): Int {
         val test = hands
-            .sortedWith(compareBy(
-                { it.power() },
-                { -cardPower.indexOf(it.cards[0]) },
-                { -cardPower.indexOf(it.cards[1]) },
-                { -cardPower.indexOf(it.cards[2]) },
-                { -cardPower.indexOf(it.cards[3]) },
-                { -cardPower.indexOf(it.cards[4]) })
+            .sortedWith(
+                compareBy(
+                    { it.power() },
+                    { -cardPower.indexOf(it.cards[0]) },
+                    { -cardPower.indexOf(it.cards[1]) },
+                    { -cardPower.indexOf(it.cards[2]) },
+                    { -cardPower.indexOf(it.cards[3]) },
+                    { -cardPower.indexOf(it.cards[4]) })
             )
-        
-        val test2 = test.mapIndexed { index, hand -> hand.bid * (index+1) }
+
+        val test2 = test.mapIndexed { index, hand -> hand.bid * (index + 1) }
 
         test.forEach { println("$it ${it.power()} ${cardPower.indexOf(it.cards[0])} ${cardPower.indexOf(it.cards[1])}") }
 
-        println(test2.sum())
+        return test2.sum()
     }
 
-    fun part2() {
+    fun part2(): Int {
         val test = hands
-            .sortedWith(compareBy(
-                { it.power2() },
-                { -cardPower2.indexOf(it.cards[0]) },
-                { -cardPower2.indexOf(it.cards[1]) },
-                { -cardPower2.indexOf(it.cards[2]) },
-                { -cardPower2.indexOf(it.cards[3]) },
-                { -cardPower2.indexOf(it.cards[4]) })
+            .sortedWith(
+                compareBy(
+                    { it.power2() },
+                    { -cardPower2.indexOf(it.cards[0]) },
+                    { -cardPower2.indexOf(it.cards[1]) },
+                    { -cardPower2.indexOf(it.cards[2]) },
+                    { -cardPower2.indexOf(it.cards[3]) },
+                    { -cardPower2.indexOf(it.cards[4]) })
             )
 
-        val test2 = test.mapIndexed { index, hand -> hand.bid * (index+1) }
+        val test2 = test.mapIndexed { index, hand -> hand.bid * (index + 1) }
 
         test.forEach { println("$it ${it.power2()} ${cardPower2.indexOf(it.cards[0])} ${cardPower2.indexOf(it.cards[1])}") }
 
-        println(test2.sum())
+        return test2.sum()
     }
 
 
@@ -73,15 +75,15 @@ class Day7(input: List<String>) {
 
             return 1
         }
-        
-        fun power2():Int {
+
+        fun power2(): Int {
             val newPowers = arrayOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
-                .map { replacement -> 
-                    val newCards = cards.map { if(it == 'J') replacement else it } 
+                .map { replacement ->
+                    val newCards = cards.map { if (it == 'J') replacement else it }
                     val newPower = power(newCards)
                     newPower
                 }
-            
+
             return newPowers.max()
         }
 

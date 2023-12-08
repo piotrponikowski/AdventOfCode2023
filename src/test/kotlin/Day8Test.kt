@@ -7,8 +7,7 @@ class Day8Test : FunSpec({
     val exampleInput1 = readLines("day8-1.txt", true)
     val exampleInput2 = readLines("day8-2.txt", true)
     val exampleInput3 = readLines("day8-3.txt", true)
-
-
+    
     context("Part 1") {
         test("should solve example 1") {
             Day8(exampleInput1).part1() shouldBe 2

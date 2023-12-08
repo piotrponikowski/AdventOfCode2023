@@ -5,56 +5,36 @@ class Day8(input: List<String>) {
 
     fun part1() = solve("AAA") { current -> current != "ZZZ" }
 
-    fun part2():Long {
-        val staringNodes = nodes.filter { it.start.endsWith("A") }.map { it.start }
-        println(staringNodes)
+    fun part2() = nodes.asSequence()
+        .filter { node -> node.source.endsWith("A") }
+        .map { node -> solve(node.source) { currentNode -> !currentNode.endsWith("Z") } }
+        .reduce { result, count -> lcm(result, count) }
 
-        val indices = staringNodes.map { solve(it) { current -> !current.endsWith("Z") } }.map { it.toLong() }
-        println(indices)
+    fun solve(startingNode: String, endCondition: (String) -> Boolean): Long {
+        var currentNode = startingNode
+        var instructionIndex = 0
 
-        val result = indices.reduce { acc, l -> lcm(acc, l) }
-        println(result)
-        return result
-    }
+        while (endCondition(currentNode)) {
+            val instruction = instructions[instructionIndex % instructions.size]
+            val node = nodes.first { it.source == currentNode }
 
-
-    fun solve(start: String = "AAA", endCondition: (String) -> Boolean): Int {
-        var current = start
-        var index = 0
-        while (endCondition(current)) {
-            val instruction = instructions[index % instructions.size]
-            val node = nodes.find { it.start == current }!!
-            if (instruction == 'L') {
-                current = node.left
-            } else {
-                current = node.right
-            }
-
-            index += 1
+            currentNode = if (instruction == 'L') node.left else node.right
+            instructionIndex += 1
         }
-        return index
-    }
 
+        return instructionIndex.toLong()
+    }
 
     private fun parseInstructions(input: List<String>) = input.first().toList()
     private fun parseNodes(input: List<String>) = input.drop(2).map { line -> Node.parse(line) }
 
-    data class Node(val start: String, val left: String, val right: String) {
-
+    data class Node(val source: String, val left: String, val right: String) {
 
         companion object {
             private val pattern = Regex("""(\w+) = \((\w+), (\w+)\)""")
 
             fun parse(input: String) = pattern.matchEntire(input)!!.destructured
-                .let { (start, left, right) -> Node(start, left, right) }
+                .let { (source, left, right) -> Node(source, left, right) }
         }
     }
-}
-
-fun main() {
-//    val input = readText("day8.txt", true)
-    val input = readLines("day8.txt")
-
-    val result = Day8(input).part2()
-    println(result)
 }

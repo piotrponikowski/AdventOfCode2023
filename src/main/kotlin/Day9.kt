@@ -1,11 +1,12 @@
 class Day9(input: List<String>) {
 
-    private val histories = input.map { it.split(" ").map { it.toInt() } }.map { History(it) }
+    private val histories = input
+        .map { line -> line.split(" ").map { number-> number.toInt() } }
+        .map { numbers -> History(numbers) }
 
     fun part1() = histories.sumOf { history -> history.nextDiff() }
 
     fun part2() = histories.sumOf { history -> history.reversed().nextDiff() }
-
 
     data class History(val numbers: List<Int>) {
         fun reversed() = History(numbers.reversed())

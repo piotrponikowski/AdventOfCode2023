@@ -20,16 +20,6 @@ class Day10(input: List<String>) {
             .count { crossingsCount -> crossingsCount % 2 == 1 }
     }
 
-
-    private val pipeTypes = mapOf(
-        '|' to listOf(Direction.U, Direction.D),
-        '-' to listOf(Direction.L, Direction.R),
-        'L' to listOf(Direction.U, Direction.R),
-        'J' to listOf(Direction.U, Direction.L),
-        '7' to listOf(Direction.D, Direction.L),
-        'F' to listOf(Direction.D, Direction.R)
-    )
-
     private fun solveLoop(pipes: List<Pipe>, startingPipe: Pipe): List<Point> {
         val visitedPositions = mutableListOf<Point>()
         var currentPipe = startingPipe
@@ -69,6 +59,15 @@ class Day10(input: List<String>) {
         val connections = pipeTypes[symbol]!!.map { direction -> position + direction }
         return Pipe(position, symbol, connections)
     }
+
+    private val pipeTypes = mapOf(
+        '|' to listOf(Direction.U, Direction.D),
+        '-' to listOf(Direction.L, Direction.R),
+        'L' to listOf(Direction.U, Direction.R),
+        'J' to listOf(Direction.U, Direction.L),
+        '7' to listOf(Direction.D, Direction.L),
+        'F' to listOf(Direction.D, Direction.R)
+    )
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)

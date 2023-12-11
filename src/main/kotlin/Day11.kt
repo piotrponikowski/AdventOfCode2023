@@ -23,9 +23,7 @@ class Day11(input: List<String>) {
 
     fun solve(expandSize: Long = 1L) = board
         .flatMapIndexed { index1, point1 ->
-            board.mapIndexed { index2, point2 -> 
-                if (index2 > index1) distance(point1, point2, expandSize) else 0L 
-            }
+            board.mapIndexed { index2, point2 -> if (index2 > index1) distance(point1, point2, expandSize) else 0L }
         }.sum()
 
     private fun distance(from: Point, to: Point, expandSize: Long = 1L): Long {

@@ -35,8 +35,8 @@ class Day11(input: List<String>) {
         val diffX = maxX - minX
         val diffY = maxY - minY
 
-        val galaxyX = galaxyX.filter { x -> x in (minX..maxX) }.size * (expandSize)
-        val galaxyY = galaxyY.filter { y -> y in (minY..maxY) }.size * (expandSize)
+        val galaxyX = galaxyX.filter { x -> x in (minX..maxX) }.size * (expandSize - 1)
+        val galaxyY = galaxyY.filter { y -> y in (minY..maxY) }.size * (expandSize - 1)
 
         return diffX + diffY + galaxyX + galaxyY
     }

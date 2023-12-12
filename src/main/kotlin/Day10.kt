@@ -12,8 +12,9 @@ class Day10(input: List<String>) {
         val typesFacingNorth = listOf('|', 'J', 'L')
         val positionsToScan = board.keys - loop.toSet()
 
-        val crossings =
-            loop.filter { position -> pipes.first { pipe -> pipe.position == position }.symbol in typesFacingNorth }
+        val crossings = loop.map { position -> pipes.first { pipe -> pipe.position == position } }
+                .filter { pipe -> pipe.symbol in typesFacingNorth }
+                .map { pipe -> pipe.position }
 
         return positionsToScan
             .map { position -> crossings.count { pipe -> pipe.y == position.y && pipe.x < position.x } }

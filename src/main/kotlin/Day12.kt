@@ -1,123 +1,65 @@
-import kotlin.math.pow
-
 class Day12(input: List<String>) {
 
-    val springs = input.map { line -> line.split(" ") }
+    private val data = input.map { line -> line.split(" ") }
         .map { (state, groups) -> state to groups.split(",").map { it.toInt() } }
-        .map { (state, groups) -> Spring(state, groups) }
+        .map { (state, groups) -> ConditionData(state, groups) }
 
-    fun part1() = springs.map { solve(it) }.sum()
+    fun part1() = data.sumOf { conditionData -> count(conditionData.withEnd()) }
 
-//    fun part1() = springs.map { it.solve() }.sum()
-    
-    fun part2() = springs.map { it.unfold() }.map { solve(it) }.sum()
+    fun part2() = data.sumOf { conditionData -> count(conditionData.unfold(5).withEnd()) }
 
-    fun solve(input: Spring): Int {
-        val finishedSprings = mutableListOf<Spring>()
-        var springsToCheck = mutableListOf(input)
-        while (springsToCheck.isNotEmpty()) {
-            val toCheck = springsToCheck.removeFirst()
+    private val cache = mutableMapOf<CacheKey, Long>()
 
-            if (toCheck.isSolved()) {
-                finishedSprings += toCheck
+    private fun count(condition: ConditionData, position: Int = 0, count: Int = 0, group: Int = 0): Long {
 
-            } else {
-                springsToCheck.addAll(toCheck.split())
-            }
+        val cacheKey = CacheKey(condition, position, count, group)
+        if (cache.containsKey(cacheKey)) {
+            return cache[cacheKey]!!
         }
-        
-        return finishedSprings.size
+
+        var result = 0L
+        if (position == condition.data.length) {
+            result = if (condition.groups.size == group) 1 else 0
+
+        } else if (condition.data[position] == '#') {
+            result += countDamaged(condition, position, count, group)
+
+        } else if (condition.data[position] == '.') {
+            result += countOperational(condition, position, count, group)
+
+        } else if (condition.data[position] == '?') {
+            result += countDamaged(condition, position, count, group)
+            result += countOperational(condition, position, count, group)
+        }
+
+        cache[cacheKey] = result
+        return result
     }
 
+    private fun countDamaged(condition: ConditionData, position: Int, count: Int, group: Int): Long {
+        return count(condition, position + 1, count + 1, group)
+    }
 
-    data class Spring(val state: String, val groups: List<Int>) {
-
-        fun isSolved() = state.none { it == '?' }
-
-        fun isValid(): Boolean {
-            var index = state.indexOf('?')
-            if (index == -1) {
-                index = state.length
-            }
-
-            val result = mutableListOf<Int>()
-            var current = 0
-
-            state.substring(0, index).forEach { symbol ->
-                if (symbol == '#') {
-                    current += 1
-                } else if (symbol == '.') {
-                    if (current > 0) {
-                        result += current
-                        current = 0
-                    }
-                }
-            }
-
-            if (current > 0 && !state.contains('?')) {
-                result += current
-                current = 0
-            }
-
-            if (!state.contains('?') && result.size != groups.size) {
-                return false
-            }
-
-            val test = result.zip(groups).all { (a, b) -> a == b }
-            return test
-        }
-
-        fun solve(result: Int = 0, input: Spring = this, mul: Int = 1): Int {
-            val (a, b) = split2(input)
-
-            var temp = result
-            if (!a.isValid()) {
-                temp += 0
-            } else if (a.isSolved()) {
-                temp += mul
-            } else {
-                temp += solve(result, a, mul * 2)
-            }
-
-            if (!b.isValid()) {
-                temp += 0
-            } else if (b.isSolved()) {
-                temp += mul
-            } else {
-                temp += solve(result, b, mul * 2)
-            }
-
-            return temp
-        }
-
-        fun split2(input: Spring): List<Spring> {
-            val index = input.state.indexOf('?')
-            val result1 = input.state.substring(0, index) + '.' + input.state.substring(index + 1)
-            val result2 = input.state.substring(0, index) + '#' + input.state.substring(index + 1)
-            val result = listOf(result1, result2)
-            return result.map { Spring(it, groups) }
-        }
-
-
-        fun split(): List<Spring> {
-            val index = state.indexOf('?')
-            val result1 = state.substring(0, index) + '.' + state.substring(index + 1)
-            val result2 = state.substring(0, index) + '#' + state.substring(index + 1)
-            val result = listOf(result1, result2)
-            return result.map { Spring(it, groups) }.filter { it.isValid() }
-        }
-
-        fun unfold(): Spring {
-            val a = (0..4).map { state }.joinToString("?")
-            val b = (0..4).flatMap { groups }
-            return Spring(a, b)
+    private fun countOperational(condition: ConditionData, position: Int, count: Int, group: Int): Long {
+        return if (group < condition.groups.size && count == condition.groups[group]) {
+            count(condition, position + 1, 0, group + 1)
+        } else if (count == 0) {
+            count(condition, position + 1, 0, group)
+        } else {
+            0
         }
     }
-}
 
-fun main() {
-//    val input = readText("day12.txt", true)
-    val input = readLines("day12.txt", true)
-    val result = Day12(input).part2()
-    println(result)
+    data class ConditionData(val data: String, val groups: List<Int>) {
+
+        fun unfold(repeat: Int): ConditionData {
+            val newData = (0..<repeat).joinToString("?") { data }
+            val newGroups = (0..<repeat).flatMap { groups }
+            return ConditionData(newData, newGroups)
+        }
+
+        fun withEnd() = ConditionData("$data.", groups)
+    }
+
+    data class CacheKey(val condition: ConditionData, val position: Int, val count: Int, val group: Int)
 }

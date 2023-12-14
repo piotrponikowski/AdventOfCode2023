@@ -28,10 +28,10 @@ class Day14(input: List<String>) {
 
     private fun moveBoard(state: Map<Point, Char>, direction: Direction): Map<Point, Char> {
         val newState = state.toMutableMap()
-        var changedState: Boolean
+        var stateChanged: Boolean
 
         do {
-            changedState = false
+            stateChanged = false
 
             newState.forEach { (point, symbol) ->
                 if (symbol == 'O') {
@@ -41,12 +41,12 @@ class Day14(input: List<String>) {
                     if (neighbourSymbol == '.') {
                         newState[neighbourPoint] = 'O'
                         newState[point] = '.'
-                        changedState = true
+                        stateChanged = true
                     }
                 }
             }
 
-        } while (changedState)
+        } while (stateChanged)
 
 
         return newState

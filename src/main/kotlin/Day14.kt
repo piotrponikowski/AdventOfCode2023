@@ -1,18 +1,19 @@
 class Day14(input: List<String>) {
 
-    private val board =
-        input.flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol } }.toMap()
+    private val board = input
+        .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol } }.toMap()
 
     fun part1() = scoreState(moveBoard(board, Direction.U))
 
     fun part2(): Int {
         val states = mutableListOf<Map<Point, Char>>()
+        val cycle = listOf(Direction.U, Direction.L, Direction.D, Direction.R)
 
         var currentState = board
         var loopFound = false
 
         while (!loopFound) {
-            currentState = cycle(currentState)
+            currentState = cycle.fold(currentState) { state, direction -> moveBoard(state, direction) }
             loopFound = states.contains(currentState)
             states += currentState
         }
@@ -24,10 +25,6 @@ class Day14(input: List<String>) {
         val index = ((1000000000 - loopStart) % loopSize) + loopStart - 1
         return scoreState(states[index])
     }
-
-    private fun cycle(state: Map<Point, Char>) =
-        listOf(Direction.U, Direction.L, Direction.D, Direction.R).fold(state) { a, b -> moveBoard(a, b) }
-
 
     private fun moveBoard(state: Map<Point, Char>, direction: Direction): Map<Point, Char> {
         val newState = state.toMutableMap()
@@ -67,12 +64,4 @@ class Day14(input: List<String>) {
     enum class Direction(val x: Int, val y: Int) {
         L(-1, 0), R(1, 0), U(0, -1), D(0, 1)
     }
-}
-
-fun main() {
-//    val input = readText("day14.txt", true)
-    val input = readLines("day14.txt")
-
-    val result = Day14(input).part2()
-    println(result)
 }

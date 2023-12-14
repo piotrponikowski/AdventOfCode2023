@@ -1,117 +1,63 @@
-import java.util.*
-
 class Day14(input: List<String>) {
 
     private val board =
         input.flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol } }.toMap()
 
-    fun part1(): Int {
-        val state = solve(board, Direction.U)
-        return scoreState(state)
-    }
+    fun part1() = scoreState(moveBoard(board, Direction.U))
 
+    fun part2(): Int {
+        val states = mutableListOf<Map<Point, Char>>()
 
-    data class Cache(val state: Map<Point, Char>, val score: Int)
+        var currentState = board
+        var loopFound = false
 
-    fun part2() {
-        val scores = mutableListOf<Cache>()
-//        scores += Cache(board, 0)
-
-        var current = board
-        var found = false;
-        var loopStart = -1
-        while (!found) {
-            current = cycle(current)
-            val score = scoreState(current)
-            val cacheKey = Cache(current, score)
-
-            found = scores.contains(cacheKey)
-            if (!found) {
-                scores += cacheKey
-            } else {
-                loopStart = scores.indexOf(cacheKey)
-            }
-            //println(scores.indexOf(cacheKey))
-
-
-//            val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-//            val currentDate = sdf.format(Date())
-//            println(currentDate)
-
-            println(score)
+        while (!loopFound) {
+            currentState = cycle(currentState)
+            loopFound = states.contains(currentState)
+            states += currentState
         }
 
-//        val loopedElement = scores.last()
+        val loopStart = states.indexOf(states.last())
+        val loopEnd = states.size
+        val loopSize = loopEnd - loopStart - 1
 
-        val loopEnd = scores.size
-        val loopSize = loopEnd - loopStart
-        
-        val rest = ((1000000000 - loopStart) % loopSize) + loopStart-1
-
-        println()
-        println(rest)
-        println(loopStart)
-        println(scores[rest].score)
+        val index = ((1000000000 - loopStart) % loopSize) + loopStart - 1
+        return scoreState(states[index])
     }
 
-    private fun cycle(state: Map<Point, Char>): Map<Point, Char> {
-        val state1 = solve(state, Direction.U)
-        val state2 = solve(state1, Direction.L)
-        val state3 = solve(state2, Direction.D)
-        return solve(state3, Direction.R)
-    }
+    private fun cycle(state: Map<Point, Char>) =
+        listOf(Direction.U, Direction.L, Direction.D, Direction.R).fold(state) { a, b -> moveBoard(a, b) }
 
-    private fun solve(state: Map<Point, Char>, direction: Direction): Map<Point, Char> {
-        var current = state
-        val maxY = board.keys.maxOf { it.y }
 
-        var noChanges = false
-        (0..maxY).forEach { _ ->
+    private fun moveBoard(state: Map<Point, Char>, direction: Direction): Map<Point, Char> {
+        val newState = state.toMutableMap()
+        var changedState: Boolean
 
-            if (!noChanges) {
-                noChanges = true
-                val copy = current.toMutableMap()
+        do {
+            changedState = false
 
-                current.filter { it.value == 'O' }.forEach { (key, symbol) ->
-                    val neighbourPoint = key + direction
-                    val neighbourEntry = current.entries.find { it.key == neighbourPoint }
-                    val neighbourSymbol = neighbourEntry?.value ?: '#'
+            newState.forEach { (point, symbol) ->
+                if (symbol == 'O') {
+                    val neighbourPoint = point + direction
+                    val neighbourSymbol = newState[neighbourPoint] ?: '#'
 
-                    if (symbol == 'O' && neighbourSymbol == '.') {
-                        copy[neighbourPoint] = 'O'
-                        copy[key] = '.'
-                        noChanges = false
+                    if (neighbourSymbol == '.') {
+                        newState[neighbourPoint] = 'O'
+                        newState[point] = '.'
+                        changedState = true
                     }
                 }
-                current = copy
             }
-        }
+
+        } while (changedState)
 
 
-        return current
+        return newState
     }
 
     private fun scoreState(state: Map<Point, Char>): Int {
-        val maxY = board.keys.maxOf { it.y }
-        return state.entries.map { (key, symbol) ->
-            if (symbol == 'O') {
-                (maxY + 1) - key.y
-            } else {
-                0
-            }
-        }.sum()
-    }
-
-    private fun printState(state: Map<Point, Char>) {
-        val maxX = state.keys.maxOf { it.x }
-        val maxY = state.keys.maxOf { it.y }
-
-        (0..maxY).forEach { y ->
-            (0..maxX).forEach { x ->
-                print(state[Point(x, y)])
-            }
-            println()
-        }
+        val maxY = board.keys.maxOf { point -> point.y }
+        return state.map { (point, symbol) -> if (symbol == 'O') (maxY + 1) - point.y else 0 }.sum()
     }
 
     data class Point(val x: Int, val y: Int) {

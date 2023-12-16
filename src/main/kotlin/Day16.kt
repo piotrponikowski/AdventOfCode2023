@@ -94,11 +94,3 @@ class Day16(input: List<String>) {
         }
     }
 }
-
-fun main() {
-//    val input = readText("day16.txt", true)
-    val input = readLines("day16.txt")
-
-    val result = Day16(input).part2()
-    println(result)
-}

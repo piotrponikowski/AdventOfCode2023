@@ -1,5 +1,3 @@
-import java.lang.IllegalStateException
-
 class Day16(input: List<String>) {
 
     private val board = input
@@ -7,13 +5,13 @@ class Day16(input: List<String>) {
 
     fun part1() = solve(Beam(Point(0, 0), Direction.R))
 
-    fun part2() = staringPositions().map { solve(it) }.max()
+    fun part2() = staringPositions().maxOfOrNull { beam -> solve(beam) }!!
 
-    fun staringPositions():List<Beam> {
+    private fun staringPositions(): List<Beam> {
         val beams = mutableListOf<Beam>()
 
-        val maxX = board.keys.maxOf { it.x }
-        val maxY = board.keys.maxOf { it.y }
+        val maxX = board.keys.maxOf { point -> point.x }
+        val maxY = board.keys.maxOf { point -> point.y }
 
         (0..maxX).forEach { x ->
             beams += Beam(Point(x, 0), Direction.D)
@@ -24,18 +22,18 @@ class Day16(input: List<String>) {
             beams += Beam(Point(0, y), Direction.R)
             beams += Beam(Point(maxX, y), Direction.L)
         }
-        
+
         return beams
     }
 
-    fun solve(start: Beam): Int {
+    private fun solve(start: Beam): Int {
         val visited = mutableSetOf<Beam>()
         val beams = mutableListOf(start)
 
         while (beams.isNotEmpty()) {
             val beam = beams.removeFirst()
 
-            if (beam !in visited && board.containsKey(beam.position)) {
+            if (!visited.contains(beam) && board.containsKey(beam.position)) {
                 visited += beam
 
                 val tile = board[beam.position]!!
@@ -46,17 +44,14 @@ class Day16(input: List<String>) {
                     beams += beam.left()
                 } else if (tile == '\\') {
                     beams += beam.right()
-                } else if (tile == '-' && (beam.direction == Direction.L || beam.direction == Direction.R)) {
+                } else if (tile == '-' && beam.isHorizontal()) {
                     beams += beam.straight()
-                } else if (tile == '|' && (beam.direction == Direction.U || beam.direction == Direction.D)) {
+                } else if (tile == '|' && beam.isVertical()) {
                     beams += beam.straight()
-                } else if (tile == '-' || tile == '|') {
+                } else {
                     beams += beam.left()
                     beams += beam.right()
-                } else {
-                    throw IllegalStateException()
                 }
-
             }
         }
 
@@ -70,6 +65,9 @@ class Day16(input: List<String>) {
 
         fun right() = Beam(position + direction.right(), direction.right())
 
+        fun isHorizontal() = direction == Direction.L || direction == Direction.R
+
+        fun isVertical() = direction == Direction.U || direction == Direction.D
     }
 
     data class Point(val x: Int, val y: Int) {

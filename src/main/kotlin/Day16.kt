@@ -39,52 +39,51 @@ class Day16(input: List<String>) {
                 val tile = board[beam.position]!!
 
                 if (tile == '.') {
-                    beams += beam.straight()
+                    beams += beam.goStraight()
                 } else if (tile == '/') {
-                    beams += beam.left()
+                    beams += beam.golLeft()
                 } else if (tile == '\\') {
-                    beams += beam.right()
-                } else if (tile == '-' && beam.isHorizontal()) {
-                    beams += beam.straight()
-                } else if (tile == '|' && beam.isVertical()) {
-                    beams += beam.straight()
+                    beams += beam.goRight()
+                } else if (tile == '-' && beam.direction.horizontal) {
+                    beams += beam.goStraight()
+                } else if (tile == '|' && !beam.direction.horizontal) {
+                    beams += beam.goStraight()
                 } else {
-                    beams += beam.left()
-                    beams += beam.right()
+                    beams += beam.golLeft()
+                    beams += beam.goRight()
                 }
             }
         }
 
-        return visited.map { it.position }.toSet().size
+        return visited.map { beam -> beam.position }.toSet().size
     }
 
     data class Beam(val position: Point, val direction: Direction) {
-        fun straight() = Beam(position + direction, direction)
+        fun goStraight() = Beam(position + direction, direction)
 
-        fun left() = Beam(position + direction.left(), direction.left())
+        fun golLeft() = Beam(position + direction.turnLeft(), direction.turnLeft())
 
-        fun right() = Beam(position + direction.right(), direction.right())
-
-        fun isHorizontal() = direction == Direction.L || direction == Direction.R
-
-        fun isVertical() = direction == Direction.U || direction == Direction.D
+        fun goRight() = Beam(position + direction.turnRight(), direction.turnRight())
     }
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)
     }
 
-    enum class Direction(val x: Int, val y: Int) {
-        L(-1, 0), R(1, 0), U(0, -1), D(0, 1);
+    enum class Direction(val x: Int, val y: Int, val horizontal: Boolean) {
+        L(-1, 0, true),
+        R(1, 0, true),
+        U(0, -1, false),
+        D(0, 1, false);
 
-        fun left() = when (this) {
+        fun turnLeft() = when (this) {
             D -> L
             R -> U
             U -> R
             L -> D
         }
 
-        fun right() = when (this) {
+        fun turnRight() = when (this) {
             D -> R
             R -> D
             U -> L

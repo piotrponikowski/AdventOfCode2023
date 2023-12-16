@@ -5,25 +5,19 @@ class Day16(input: List<String>) {
 
     fun part1() = solve(Beam(Point(0, 0), Direction.R))
 
-    fun part2() = staringPositions().maxOfOrNull { beam -> solve(beam) }!!
+    fun part2() = startingPositions().maxOfOrNull { beam -> solve(beam) }!!
 
-    private fun staringPositions(): List<Beam> {
-        val beams = mutableListOf<Beam>()
-
+    private fun startingPositions(): List<Beam> {
         val maxX = board.keys.maxOf { point -> point.x }
         val maxY = board.keys.maxOf { point -> point.y }
 
-        (0..maxX).forEach { x ->
-            beams += Beam(Point(x, 0), Direction.D)
-            beams += Beam(Point(x, maxY), Direction.U)
-        }
-
-        (0..maxY).forEach { y ->
-            beams += Beam(Point(0, y), Direction.R)
-            beams += Beam(Point(maxX, y), Direction.L)
-        }
-
-        return beams
+        val horizontalBeams = (0..maxY)
+            .flatMap { y -> listOf(Beam(Point(0, y), Direction.R), Beam(Point(maxX, y), Direction.L)) }
+        
+        val verticalBeams = (0..maxX)
+            .flatMap { x -> listOf(Beam(Point(x, 0), Direction.D), Beam(Point(x, maxY), Direction.U)) }
+      
+        return horizontalBeams + verticalBeams
     }
 
     private fun solve(start: Beam): Int {
@@ -41,7 +35,7 @@ class Day16(input: List<String>) {
                 if (tile == '.') {
                     beams += beam.goStraight()
                 } else if (tile == '/') {
-                    beams += beam.golLeft()
+                    beams += beam.goLeft()
                 } else if (tile == '\\') {
                     beams += beam.goRight()
                 } else if (tile == '-' && beam.direction.horizontal) {
@@ -49,7 +43,7 @@ class Day16(input: List<String>) {
                 } else if (tile == '|' && !beam.direction.horizontal) {
                     beams += beam.goStraight()
                 } else {
-                    beams += beam.golLeft()
+                    beams += beam.goLeft()
                     beams += beam.goRight()
                 }
             }
@@ -61,7 +55,7 @@ class Day16(input: List<String>) {
     data class Beam(val position: Point, val direction: Direction) {
         fun goStraight() = Beam(position + direction, direction)
 
-        fun golLeft() = Beam(position + direction.turnLeft(), direction.turnLeft())
+        fun goLeft() = Beam(position + direction.turnLeft(), direction.turnLeft())
 
         fun goRight() = Beam(position + direction.turnRight(), direction.turnRight())
     }

@@ -3,46 +3,11 @@ class Day17(input: List<String>) {
     private val board = input
         .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol.toString().toInt() } }.toMap()
 
-    fun part1(): Int {
-        val maxX = board.keys.maxOf { point -> point.x }
-        val maxY = board.keys.maxOf { point -> point.y }
+    fun part1() = solve(0, 3)
 
-        val startPosition = Point(0, 0)
-        val endPosition = Point(maxX, maxY)
+    fun part2() = solve(4, 10)
 
-        val startingCrucible = Crucible(startPosition, Direction.R, 0)
-
-        val crucibles = mutableListOf(startingCrucible)
-        val visited = mutableMapOf(startingCrucible to 0)
-
-        while (crucibles.isNotEmpty()) {
-            val crucible = crucibles.removeFirst()
-            val heatLost = visited[crucible]!!
-
-            val directions = crucible.direction.allowedDirections()
-
-            directions.forEach { direction ->
-                val newPosition = crucible.position + direction
-                val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
-                if (board.containsKey(newPosition) && newCounter <= 3) {
-
-                    val newHeatLost = heatLost + board[newPosition]!!
-                    val newCrucible = Crucible(crucible.position + direction, direction, newCounter)
-                    val existingHeatLost = visited[newCrucible] ?: Int.MAX_VALUE
-
-                    if (newHeatLost < existingHeatLost) {
-                        crucibles += newCrucible
-                        visited[newCrucible] = newHeatLost
-                    }
-                }
-            }
-
-        }
-
-        return visited.filter { (crucible) -> crucible.position == endPosition }.values.min()
-    }
-
-    fun part2(): Int {
+    fun solve(minSteps: Int, maxSteps: Int): Int {
         val startingCrucibles = listOf(Crucible(Point(0, 0), Direction.R), Crucible(Point(0, 0), Direction.D))
 
         val crucibles = startingCrucibles.toMutableList()
@@ -50,38 +15,33 @@ class Day17(input: List<String>) {
 
         while (crucibles.isNotEmpty()) {
             val crucible = crucibles.removeFirst()
-            val heatLost = visited[crucible]!!
+            val heatLoss = visited[crucible]!!
 
-            val directions = crucible.direction.allowedDirections()
-
-            directions.forEach { direction ->
+            crucible.direction.allowedDirections().forEach { direction ->
                 val newPosition = crucible.position + direction
+                val sameDirection = direction == crucible.direction
+                val directionAllowed = if (sameDirection) crucible.steps < maxSteps else crucible.steps >= minSteps
 
-                val straightForced = crucible.steps >= 4 || direction == crucible.direction
-                val turnForced = crucible.steps < 10 || direction !== crucible.direction
+                if (board.containsKey(newPosition) && directionAllowed) {
 
-                val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
-
-                if (board.containsKey(newPosition) && straightForced && turnForced) {
-
-                    val newHeatLost = heatLost + board[newPosition]!!
+                    val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
+                    val newHeatLost = heatLoss + board[newPosition]!!
                     val newCrucible = Crucible(crucible.position + direction, direction, newCounter)
-                    val existingHeatLost = visited[newCrucible] ?: Int.MAX_VALUE
 
-                    if (newHeatLost < existingHeatLost) {
+                    val existingHeatLoss = visited[newCrucible] ?: Int.MAX_VALUE
+                    if (newHeatLost < existingHeatLoss) {
                         crucibles += newCrucible
                         visited[newCrucible] = newHeatLost
                     }
                 }
             }
-
         }
 
         val maxX = board.keys.maxOf { point -> point.x }
         val maxY = board.keys.maxOf { point -> point.y }
         val endPosition = Point(maxX, maxY)
 
-        return visited.filter { (crucible) -> crucible.position == endPosition && crucible.steps >= 4 }.values.min()
+        return visited.filter { (crucible) -> crucible.position == endPosition && crucible.steps >= minSteps }.values.min()
     }
 
     data class Crucible(val position: Point, val direction: Direction, val steps: Int = 0)

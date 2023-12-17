@@ -15,8 +15,7 @@ class Day17(input: List<String>) {
 
         while (states.isNotEmpty()) {
             val state = states.removeFirst()
-            val heatLoss = visited[state]!!
-
+            
             state.direction.allowedDirections().forEach { newDirection ->
                 val newPosition = state.position + newDirection
                 val sameDirection = newDirection == state.direction
@@ -25,7 +24,7 @@ class Day17(input: List<String>) {
                 if (board.containsKey(newPosition) && directionAllowed) {
 
                     val newSteps = if (newDirection == state.direction) state.steps + 1 else 1
-                    val newHeatLoss = heatLoss + board[newPosition]!!
+                    val newHeatLoss = visited[state]!! + board[newPosition]!!
                     val newState = State(newPosition, newDirection, newSteps)
 
                     val existingHeatLoss = visited[newState] ?: Int.MAX_VALUE

@@ -25,13 +25,13 @@ class Day17(input: List<String>) {
                 if (board.containsKey(newPosition) && directionAllowed) {
 
                     val newCounter = if (direction == state.direction) state.steps + 1 else 1
-                    val newHeatLost = heatLoss + board[newPosition]!!
+                    val newHeatLoss = heatLoss + board[newPosition]!!
                     val newState = State(state.position + direction, direction, newCounter)
 
                     val existingHeatLoss = visited[newState] ?: Int.MAX_VALUE
-                    if (newHeatLost < existingHeatLoss) {
+                    if (newHeatLoss < existingHeatLoss) {
                         states += newState
-                        visited[newState] = newHeatLost
+                        visited[newState] = newHeatLoss
                     }
                 }
             }

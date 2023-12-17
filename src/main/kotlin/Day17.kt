@@ -8,13 +8,13 @@ class Day17(input: List<String>) {
     fun part2() = solve(4, 10)
 
     fun solve(minSteps: Int, maxSteps: Int): Int {
-        val startingCrucibles = listOf(Crucible(Point(0, 0), Direction.R), Crucible(Point(0, 0), Direction.D))
+        val startingStates = listOf(State(Point(0, 0), Direction.R), State(Point(0, 0), Direction.D))
 
-        val crucibles = startingCrucibles.toMutableList()
-        val visited = startingCrucibles.associateWith { 0 }.toMutableMap()
+        val states = startingStates.toMutableList()
+        val visited = startingStates.associateWith { 0 }.toMutableMap()
 
-        while (crucibles.isNotEmpty()) {
-            val crucible = crucibles.removeFirst()
+        while (states.isNotEmpty()) {
+            val crucible = states.removeFirst()
             val heatLoss = visited[crucible]!!
 
             crucible.direction.allowedDirections().forEach { direction ->
@@ -26,12 +26,12 @@ class Day17(input: List<String>) {
 
                     val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
                     val newHeatLost = heatLoss + board[newPosition]!!
-                    val newCrucible = Crucible(crucible.position + direction, direction, newCounter)
+                    val newState = State(crucible.position + direction, direction, newCounter)
 
-                    val existingHeatLoss = visited[newCrucible] ?: Int.MAX_VALUE
+                    val existingHeatLoss = visited[newState] ?: Int.MAX_VALUE
                     if (newHeatLost < existingHeatLoss) {
-                        crucibles += newCrucible
-                        visited[newCrucible] = newHeatLost
+                        states += newState
+                        visited[newState] = newHeatLost
                     }
                 }
             }
@@ -44,7 +44,7 @@ class Day17(input: List<String>) {
         return visited.filter { (crucible) -> crucible.position == endPosition && crucible.steps >= minSteps }.values.min()
     }
 
-    data class Crucible(val position: Point, val direction: Direction, val steps: Int = 0)
+    data class State(val position: Point, val direction: Direction, val steps: Int = 0)
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)

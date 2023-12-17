@@ -24,11 +24,11 @@ class Day17Test : FunSpec({
         }
 
         test("should solve example 2") {
-            Day17(exampleInput1).part2() shouldBe 71
+            Day17(exampleInput2).part2() shouldBe 71
         }
         
         test("should solve real input") {
-            Day17(realInput).part2() shouldBe 7987
+            Day17(realInput).part2() shouldBe 1249
         }
     }
 })

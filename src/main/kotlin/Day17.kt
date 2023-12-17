@@ -3,7 +3,7 @@ class Day17(input: List<String>) {
     private val board = input
         .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol.toString().toInt() } }.toMap()
 
-    fun part1():Int {
+    fun part1(): Int {
         val maxX = board.keys.maxOf { point -> point.x }
         val maxY = board.keys.maxOf { point -> point.y }
 
@@ -23,7 +23,7 @@ class Day17(input: List<String>) {
 
             directions.forEach { direction ->
                 val newPosition = crucible.position + direction
-                val newCounter = if (direction == crucible.direction) crucible.counter + 1 else 1
+                val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
                 if (board.containsKey(newPosition) && newCounter <= 3) {
 
                     val newHeatLost = heatLost + board[newPosition]!!
@@ -39,20 +39,14 @@ class Day17(input: List<String>) {
 
         }
 
-        return visited.filter { it.key.position == endPosition }.minOf { it.value }
+        return visited.filter { (crucible) -> crucible.position == endPosition }.values.min()
     }
 
-    fun part2():Int {
-        val maxX = board.keys.maxOf { point -> point.x }
-        val maxY = board.keys.maxOf { point -> point.y }
+    fun part2(): Int {
+        val startingCrucibles = listOf(Crucible(Point(0, 0), Direction.R), Crucible(Point(0, 0), Direction.D))
 
-        val startPosition = Point(0, 0)
-        val endPosition = Point(maxX, maxY)
-
-        val startingCrucible = Crucible(startPosition, Direction.R, 0)
-
-        val crucibles = mutableListOf(startingCrucible)
-        val visited = mutableMapOf(startingCrucible to 0)
+        val crucibles = startingCrucibles.toMutableList()
+        val visited = startingCrucibles.associateWith { 0 }.toMutableMap()
 
         while (crucibles.isNotEmpty()) {
             val crucible = crucibles.removeFirst()
@@ -63,11 +57,10 @@ class Day17(input: List<String>) {
             directions.forEach { direction ->
                 val newPosition = crucible.position + direction
 
-                val straightForced = crucible.counter >= 4 || direction == crucible.direction
-                val turnForced = crucible.counter <= 10 || direction !== crucible.direction
+                val straightForced = crucible.steps >= 4 || direction == crucible.direction
+                val turnForced = crucible.steps < 10 || direction !== crucible.direction
 
-                val newCounter = if (direction == crucible.direction) crucible.counter + 1 else 1
-
+                val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
 
                 if (board.containsKey(newPosition) && straightForced && turnForced) {
 
@@ -84,10 +77,14 @@ class Day17(input: List<String>) {
 
         }
 
-        return visited.filter { it.key.position == endPosition  }.minOf { it.value }
+        val maxX = board.keys.maxOf { point -> point.x }
+        val maxY = board.keys.maxOf { point -> point.y }
+        val endPosition = Point(maxX, maxY)
+
+        return visited.filter { (crucible) -> crucible.position == endPosition && crucible.steps >= 4 }.values.min()
     }
 
-    data class Crucible(val position: Point, val direction: Direction, val counter: Int)
+    data class Crucible(val position: Point, val direction: Direction, val steps: Int = 0)
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)
@@ -106,22 +103,4 @@ class Day17(input: List<String>) {
             L -> listOf(L, U, D)
         }
     }
-}
-
-fun main() {
-//    val input = readText("day17.txt", true)
-    val input = readLines("day17.txt")
-
-    val result = Day17(input).part2()
-    println(result)
-    
-    //1256
-    //1262
-    //1228
-    //1243
-    
-    //1255 or 1269
-    //1216
-    
-    //1249
 }

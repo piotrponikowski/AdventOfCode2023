@@ -14,19 +14,19 @@ class Day17(input: List<String>) {
         val visited = startingStates.associateWith { 0 }.toMutableMap()
 
         while (states.isNotEmpty()) {
-            val crucible = states.removeFirst()
-            val heatLoss = visited[crucible]!!
+            val state = states.removeFirst()
+            val heatLoss = visited[state]!!
 
-            crucible.direction.allowedDirections().forEach { direction ->
-                val newPosition = crucible.position + direction
-                val sameDirection = direction == crucible.direction
-                val directionAllowed = if (sameDirection) crucible.steps < maxSteps else crucible.steps >= minSteps
+            state.direction.allowedDirections().forEach { direction ->
+                val newPosition = state.position + direction
+                val sameDirection = direction == state.direction
+                val directionAllowed = if (sameDirection) state.steps < maxSteps else state.steps >= minSteps
 
                 if (board.containsKey(newPosition) && directionAllowed) {
 
-                    val newCounter = if (direction == crucible.direction) crucible.steps + 1 else 1
+                    val newCounter = if (direction == state.direction) state.steps + 1 else 1
                     val newHeatLost = heatLoss + board[newPosition]!!
-                    val newState = State(crucible.position + direction, direction, newCounter)
+                    val newState = State(state.position + direction, direction, newCounter)
 
                     val existingHeatLoss = visited[newState] ?: Int.MAX_VALUE
                     if (newHeatLost < existingHeatLoss) {
@@ -41,7 +41,7 @@ class Day17(input: List<String>) {
         val maxY = board.keys.maxOf { point -> point.y }
         val endPosition = Point(maxX, maxY)
 
-        return visited.filter { (crucible) -> crucible.position == endPosition && crucible.steps >= minSteps }.values.min()
+        return visited.filter { (state) -> state.position == endPosition && state.steps >= minSteps }.values.min()
     }
 
     data class State(val position: Point, val direction: Direction, val steps: Int = 0)

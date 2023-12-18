@@ -1,105 +1,60 @@
+import kotlin.math.abs
+
 class Day18(input: List<String>) {
 
-    val plans = input.map { line -> Plan.parse(line) }
+    private val digPlans = input.map { line -> DigPlan.parse(line) }
 
-    fun part1() = solve()
+    fun part1() = calculateArea(toPoints(digPlans))
 
+    fun part2() = calculateArea(toPoints(digPlans.map { digPlan -> digPlan.decode() }))
 
-    fun part2() = 2
+    private fun calculateArea(points: List<Point>): Long {
+        val pairs = points.reversed().windowed(2)
 
+        val sum1 = pairs.sumOf { (curr, next) -> curr.x * next.y }
+        val sum2 = pairs.sumOf { (curr, next) -> curr.y * next.x }
+        val area = abs(sum2 - sum1) / 2
 
-    fun solve() {
-        var currentPosition = Point(0, 0)
-        val visited = mutableSetOf(currentPosition)
+        val length = pairs.sumOf { (curr, next) -> abs(next.x - curr.x) + abs(next.y - curr.y) }
 
-        plans.forEach { plan ->
-            (1..plan.count).forEach { _ ->
-                currentPosition += plan.direction
-                visited += currentPosition
-            }
-        }
-
-        val minX = visited.minOf { it.x } - 1
-        val maxX = visited.maxOf { it.x } + 1
-
-        val minY = visited.minOf { it.y } - 1
-        val maxY = visited.maxOf { it.y } + 1
-
-        print(visited)
-
-        var outside = 0
-
-        val start = Point(minX, minY)
-        if (start !in visited) {
-
-            val fill = mutableSetOf<Point>()
-            val check = mutableListOf(start)
-            while (check.isNotEmpty()) {
-                val checkPoint = check.removeFirst()
-
-                Direction.entries.forEach { direction ->
-                    val neighbourPoint = checkPoint + direction
-
-                    val inside = neighbourPoint.x in (minX..maxX) && neighbourPoint.y in (minY..maxY)
-                    if (inside && neighbourPoint !in visited && neighbourPoint !in fill && neighbourPoint !in check) {
-                        check += neighbourPoint
-                        fill += neighbourPoint
-                        //println("added $neighbourPoint")
-                    }
-                }
-            }
-
-            outside = fill.size
-        }
-
-
-        val dx = maxX - minX+1
-        val dy = maxY - minY+1
-        val total = dx*dy
-        
-        println(visited.size)
-        println(total - outside)
-
+        return area + length / 2 + 1
     }
 
-    fun print(points: Set<Point>) {
-        val minX = points.minOf { it.x }
-        val maxX = points.maxOf { it.x }
+    private fun toPoints(digPlans: List<DigPlan>) = digPlans.fold(listOf(Point(0, 0))) { points, plan ->
+        val dx = plan.direction.x * plan.distance
+        val dy = plan.direction.y * plan.distance
+        val lastPoint = points.last()
 
-        val minY = points.minOf { it.y }
-        val maxY = points.maxOf { it.y }
-
-        (minY..maxY).forEach { y ->
-            (minX..maxX).forEach { x ->
-                print(if (points.contains(Point(x, y))) "#" else ".")
-            }
-            println()
-        }
+        points + Point(lastPoint.x + dx, lastPoint.y + dy)
     }
 
-    data class Plan(val direction: Direction, val count: Int, val color: String) {
+    data class DigPlan(val direction: Direction, val distance: Int, val color: String) {
+
+        fun decode(): DigPlan {
+            val newDistance = color.take(5).toInt(16)
+            val newDirection = when (color.last()) {
+                '0' -> Direction.R
+                '1' -> Direction.D
+                '2' -> Direction.L
+                '3' -> Direction.U
+                else -> throw IllegalStateException()
+            }
+
+            return DigPlan(newDirection, newDistance, "")
+        }
 
         companion object {
-            fun parse(input: String): Plan {
-                val (direction, count, color) = input.split(" ")
-                return Plan(Direction.valueOf(direction), count.toInt(), color)
+            fun parse(input: String) = input.split(" ").let { (direction, count, color) ->
+                DigPlan(Direction.valueOf(direction), count.toInt(), color.drop(2).dropLast(1))
             }
         }
     }
 
-    data class Point(val x: Int, val y: Int) {
+    data class Point(val x: Long, val y: Long) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)
     }
 
-    enum class Direction(val x: Int, val y: Int) {
+    enum class Direction(val x: Long, val y: Long) {
         L(-1, 0), R(1, 0), U(0, -1), D(0, 1);
     }
-}
-
-fun main() {
-//    val input = readText("day18.txt", true)
-    val input = readLines("day18.txt")
-
-    val result = Day18(input).part1()
-    println(result)
 }

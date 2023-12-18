@@ -19,59 +19,49 @@ class Day18(input: List<String>) {
             }
         }
 
-        val minX = visited.minOf { it.x }
-        val maxX = visited.maxOf { it.x }
+        val minX = visited.minOf { it.x } - 1
+        val maxX = visited.maxOf { it.x } + 1
 
-        val minY = visited.minOf { it.y }
-        val maxY = visited.maxOf { it.y }
-
+        val minY = visited.minOf { it.y } - 1
+        val maxY = visited.maxOf { it.y } + 1
 
         print(visited)
 
-        (minX..maxX).forEach { x ->
-            println("checking fill at $x")
-            (minY..maxY).forEach { y ->
-                val start = Point(x, y)
-                if (start !in visited) {
-       
+        var outside = 0
 
-                    val fill = mutableSetOf<Point>()
-                    val check = mutableListOf(start)
-                    var stop = false
+        val start = Point(minX, minY)
+        if (start !in visited) {
 
-                    while (check.isNotEmpty() && !stop) {
-                        val checkPoint = check.removeFirst()
+            val fill = mutableSetOf<Point>()
+            val check = mutableListOf(start)
+            while (check.isNotEmpty()) {
+                val checkPoint = check.removeFirst()
 
-                        Direction.entries.forEach { direction ->
-                            val neighbourPoint = checkPoint + direction
-                            
-                            val newInside = neighbourPoint.x in (minX..maxX) && neighbourPoint.y in (minY..maxY)
-                            if (!newInside) {
-                                stop = true
-                            }
+                Direction.entries.forEach { direction ->
+                    val neighbourPoint = checkPoint + direction
 
-
-                            if (neighbourPoint !in visited && neighbourPoint !in fill && neighbourPoint !in check) {
-                                check += neighbourPoint
-                                fill += neighbourPoint
-                                //println("added $neighbourPoint")
-                            }
-                        }
+                    val inside = neighbourPoint.x in (minX..maxX) && neighbourPoint.y in (minY..maxY)
+                    if (inside && neighbourPoint !in visited && neighbourPoint !in fill && neighbourPoint !in check) {
+                        check += neighbourPoint
+                        fill += neighbourPoint
+                        //println("added $neighbourPoint")
                     }
-
-                    if (!stop) {
-                        visited.addAll(fill)
-                    }
-                } else {
-                    //println("skipped fill at $start")  
                 }
             }
+
+            outside = fill.size
         }
 
 
+        val dx = maxX - minX+1
+        val dy = maxY - minY+1
+        val total = dx*dy
+        
         println(visited.size)
+        println(total - outside)
+
     }
-    
+
     fun print(points: Set<Point>) {
         val minX = points.minOf { it.x }
         val maxX = points.maxOf { it.x }

@@ -10,6 +10,8 @@ fun readText(filename: String, test: Boolean = false): String {
     return File(path(test), filename).readText()
 }
 
+fun readGroups(filename: String, test: Boolean = false) = groupLines(readText(filename, test))
+
 fun groupLines(input: String) = input
     .split(System.lineSeparator().repeat(2))
     .map { group -> group.split(System.lineSeparator()) }

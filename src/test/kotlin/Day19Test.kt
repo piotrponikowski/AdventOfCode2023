@@ -3,9 +3,8 @@ import io.kotest.matchers.shouldBe
 
 class Day19Test : FunSpec({
 
-    val realInput = readText("day19.txt")
-    val exampleInput = readText("day19.txt", true)
-
+    val realInput = readGroups("day19.txt")
+    val exampleInput = readGroups("day19.txt", true)
 
     context("Part 1") {
         test("should solve example") {

@@ -85,7 +85,6 @@ class Day19(input: List<List<String>>) {
 
     data class Condition(val target: String, val element: String?, val rule: String?, val value: Int?) {
         companion object {
-
             private val PATTERN_CONDITION = Regex("""^(\w+)([<>])(\d+):(\w+)$""")
 
             fun parse(input: String): Condition {
@@ -100,7 +99,6 @@ class Day19(input: List<List<String>>) {
     }
 
     data class Part(val elements: Map<String, Int>) {
-
         companion object {
             fun parse(input: String) = input
                 .drop(1).dropLast(1).split(",")

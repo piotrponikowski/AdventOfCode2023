@@ -4,16 +4,12 @@ class Day19(input: String) {
 
     val workflows = groupLines(input).first().map { line -> parseWorkflow(line) }
     val parts = groupLines(input).last().map { line -> parseParts(line) }
-    fun part1() {
-        val a = parts.map { solve(it) }.sum()
-        println(a)
-    }
+    fun part1() = parts.map { solve(it) }.sum()
 
-    fun part2() {
-        return solve2()
-    }
+    fun part2() = solve2()
+    
 
-    fun solve2() {
+    fun solve2(): Long {
         val data = listOf("x", "m", "s", "a").associateWith { (1..4000) }
         val start = AllParts("in", data)
 
@@ -77,7 +73,7 @@ class Day19(input: String) {
             }
         }
 
-        println(accepted.map { it.data.values.fold(1L) { a, b -> a * b.count() } }.sum())
+        return accepted.map { it.data.values.fold(1L) { a, b -> a * b.count() } }.sum()
     }
 
 

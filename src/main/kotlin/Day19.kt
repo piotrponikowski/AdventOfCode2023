@@ -4,133 +4,77 @@ class Day19(input: String) {
 
     val workflows = groupLines(input).first().map { line -> parseWorkflow(line) }
     val parts = groupLines(input).last().map { line -> parseParts(line) }
-    fun part1() = parts.map { solve(it) }.sum()
+    fun part1() = 1
 
     fun part2() = solve2()
-    
+
 
     fun solve2(): Long {
         val data = listOf("x", "m", "s", "a").associateWith { (1..4000) }
         val start = PartScan("in", data)
 
-        val partsToCheck = mutableListOf(start)
-        val accepted = mutableListOf<PartScan>()
+        val partsToScan = mutableListOf(start)
+        val acceptedParts = mutableListOf<PartScan>()
 
-        while (partsToCheck.isNotEmpty()) {
-            var parts = partsToCheck.removeFirst()
-            println("Checking parts $parts")
+        while (partsToScan.isNotEmpty()) {
+            var part = partsToScan.removeFirst()
+            println("Checking parts $part")
 
-            val workflow = workflows.find { it.name == parts.workflow }!!
+            val workflow = workflows.find { workflow -> workflow.name == part.target }!!
 
             workflow.conditions.forEach { condition ->
-                if (condition.part == null) {
-                    if (condition.target == "A") {
-                        accepted += parts
-                    } else if (condition.target != "R") {
-                        partsToCheck += PartScan(condition.target, parts.data)
-                    }
-                } else {
-                    val values = parts.data[condition.part]!!
-                    if (condition.value!! in values) {
-                        if (condition.rule == "<") {
-                            val redirectValues = (values.first..<condition.value)
-                            val redirectData =
-                                parts.data.mapValues { if (it.key == condition.part) redirectValues else it.value }
+                val (redirected, remaining) = checkCondition(part, condition);
 
-                            if (condition.target == "A") {
-                                accepted += PartScan(condition.target, redirectData)
-                            } else if (condition.target != "R") {
-                                partsToCheck += PartScan(condition.target, redirectData)
-                            }
-
-                            val remainingValues = (condition.value..values.last)
-                            val remainingData =
-                                parts.data.mapValues { if (it.key == condition.part) remainingValues else it.value }
-                            parts = PartScan(parts.workflow, remainingData)
-
-                        } else if (condition.rule == ">") {
-
-                            val redirectValues = (condition.value + 1..values.last)
-                            val redirectData =
-                                parts.data.mapValues { if (it.key == condition.part) redirectValues else it.value }
-
-                            if (condition.target == "A") {
-                                accepted += PartScan(condition.target, redirectData)
-                            } else if (condition.target != "R") {
-                                partsToCheck += PartScan(condition.target, redirectData)
-                            }
-
-                            val remainingValues = (values.first..condition.value)
-                            val remainingData =
-                                parts.data.mapValues { if (it.key == condition.part) remainingValues else it.value }
-                            parts = PartScan(parts.workflow, remainingData)
-
-                        } else {
-                            throw IllegalArgumentException()
-                        }
+                if (redirected != null) {
+                    if (redirected.target == "A") {
+                        acceptedParts += redirected
+                    } else if (redirected.target != "R") {
+                        partsToScan += redirected
                     }
                 }
-            }
-        }
 
-        return accepted.map { it.data.values.fold(1L) { a, b -> a * b.count() } }.sum()
-    }
-
-
-    fun solve(part: Part): Int {
-        println()
-        println("solving $part")
-        var currentWorkflow = "in"
-        var result: String? = null
-
-        while (result == null) {
-            val workflow = workflows.find { it.name == currentWorkflow }!!
-            //println("checking workflow ${workflow.name}")
-
-            var conditionFound = false
-            workflow.conditions.forEach { condition ->
-
-                if (!conditionFound && checkCondition(part, condition)) {
-                    conditionFound = true
-                    println("found ${condition.target}")
-                    if (condition.target in listOf("A", "R")) {
-                        result = condition.target
-                    } else {
-                        currentWorkflow = condition.target
-                    }
+                if (remaining != null) {
+                    part = remaining
                 }
             }
+
         }
 
-        if (result == "A") {
-            return part.data.values.sum()
-        } else {
-            return 0
-        }
+        return acceptedParts
+            .map { part -> part.elements.values }
+            .sumOf { ranges -> ranges.fold(1L) { result, range -> result * range.count() } }
     }
 
-    private fun checkCondition(part: Part, condition: Condition): Boolean {
-        if (condition.part == null) {
-            return true
+    private fun checkCondition(part: PartScan, condition: Condition): Pair<PartScan?, PartScan?> {
+        if (condition.element == null) {
+            return part.withTarget(condition.target) to null
         }
 
-        val partValue = part.data[condition.part]!!
+        val values = part.elements[condition.element]!!
+        if (condition.value!! !in values) {
+            return null to part.withTarget(condition.target)
+        }
+
         if (condition.rule == "<") {
-            return partValue < condition.value!!
+            val redirected = part.splitDown(condition.element, condition.value).withTarget(condition.target)
+            val remaining = part.splitUp(condition.element, condition.value).withTarget(condition.target)
+            return redirected to remaining
+
         } else if (condition.rule == ">") {
-            return partValue > condition.value!!
+            val redirected = part.splitUp(condition.element, condition.value).withTarget(condition.target)
+            val remaining = part.splitDown(condition.element, condition.value).withTarget(condition.target)
+            return redirected to remaining
+
         } else {
             throw IllegalArgumentException()
         }
     }
-
 
     private fun parseWorkflow(input: String): Workflow {
 
         val (name, conditionsInput) = PATTERN_WORKFLOW.matchEntire(input)!!.destructured
         val conditions = conditionsInput.split(",").map { conditionInput -> parseCondition(conditionInput) }
         return Workflow(name, conditions)
-
     }
 
     private fun parseCondition(input: String): Condition {
@@ -150,11 +94,23 @@ class Day19(input: String) {
 
     data class Workflow(val name: String, val conditions: List<Condition>)
 
-    data class Condition(val part: String?, val rule: String?, val value: Int?, val target: String)
+    data class Condition(val element: String?, val rule: String?, val value: Int?, val target: String)
 
     data class Part(val data: Map<String, Int>)
 
-    data class PartScan(val workflow: String, val data: Map<String, IntRange>)
+    data class PartScan(val target: String, val elements: Map<String, IntRange>) {
+        fun splitDown(splitElement: String, splitValue: Int) =
+            withElement(splitElement, (elements[splitElement]!!.first..<splitValue))
+
+        fun splitUp(splitElement: String, splitValue: Int) =
+            withElement(splitElement, (splitValue + 1..elements[splitElement]!!.last))
+
+        private fun withElement(replaceElement: String, newValue: IntRange) = elements
+            .mapValues { (element, value) -> if (element == replaceElement) newValue else value }
+            .let { newElements -> PartScan(target, newElements) }
+
+        fun withTarget(newTarget: String) = PartScan(newTarget, elements)
+    }
 
     companion object {
         private val PATTERN_WORKFLOW = Regex("""(\w+)\{(.*)}""")

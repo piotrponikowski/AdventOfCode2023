@@ -23,7 +23,7 @@ class Day19(input: String) {
             val workflow = workflows.find { workflow -> workflow.name == part.target }!!
 
             workflow.conditions.forEach { condition ->
-                val (redirected, remaining) = checkCondition(part, condition);
+                val (redirected, remaining) = splitByCondition(part, condition);
 
                 if (redirected != null) {
                     if (redirected.target == "A") {
@@ -45,25 +45,30 @@ class Day19(input: String) {
             .sumOf { ranges -> ranges.fold(1L) { result, range -> result * range.count() } }
     }
 
-    private fun checkCondition(part: PartScan, condition: Condition): Pair<PartScan?, PartScan?> {
+    private fun splitByCondition(part: PartScan, condition: Condition): Pair<PartScan?, PartScan?> {
+        val target = condition.target
+
         if (condition.element == null) {
-            return part.withTarget(condition.target) to null
+            return part.withTarget(target) to null
         }
 
-        val values = part.elements[condition.element]!!
-        if (condition.value!! !in values) {
-            return null to part.withTarget(condition.target)
-        }
+        val splitRule = condition.rule
+        val splitElement = condition.element
+        val splitValue = condition.value
+        val elementRange = part.elements[splitElement]!!
 
-        if (condition.rule == "<") {
-            val redirected = part.splitDown(condition.element, condition.value).withTarget(condition.target)
-            val remaining = part.splitUp(condition.element, condition.value).withTarget(condition.target)
-            return redirected to remaining
+        if (splitValue!! !in elementRange) {
+            return null to part.withTarget(target)
 
-        } else if (condition.rule == ">") {
-            val redirected = part.splitUp(condition.element, condition.value).withTarget(condition.target)
-            val remaining = part.splitDown(condition.element, condition.value).withTarget(condition.target)
-            return redirected to remaining
+        } else if (splitRule == "<") {
+            val redirected = part.withElement(splitElement, elementRange.first..<splitValue)
+            val remaining = part.withElement(splitElement, splitValue..elementRange.last)
+            return redirected.withTarget(target) to remaining.withTarget(target)
+
+        } else if (splitRule == ">") {
+            val redirected = part.withElement(splitElement, splitValue + 1..elementRange.last)
+            val remaining = part.withElement(splitElement, elementRange.first..splitValue)
+            return redirected.withTarget(target) to remaining.withTarget(target)
 
         } else {
             throw IllegalArgumentException()
@@ -99,13 +104,7 @@ class Day19(input: String) {
     data class Part(val data: Map<String, Int>)
 
     data class PartScan(val target: String, val elements: Map<String, IntRange>) {
-        fun splitDown(splitElement: String, splitValue: Int) =
-            withElement(splitElement, (elements[splitElement]!!.first..<splitValue))
-
-        fun splitUp(splitElement: String, splitValue: Int) =
-            withElement(splitElement, (splitValue + 1..elements[splitElement]!!.last))
-
-        private fun withElement(replaceElement: String, newValue: IntRange) = elements
+        fun withElement(replaceElement: String, newValue: IntRange) = elements
             .mapValues { (element, value) -> if (element == replaceElement) newValue else value }
             .let { newElements -> PartScan(target, newElements) }
 

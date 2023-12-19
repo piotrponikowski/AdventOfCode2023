@@ -4,14 +4,17 @@ class Day19(input: List<List<String>>) {
 
     private val workflows = input.first().map { line -> Workflow.parse(line) }
     private val parts = input.last().map { line -> Part.parse(line) }
+    private val acceptedParts = scan()
 
-    fun part1() = 1
+    fun part1() = parts
+        .filter { part -> acceptedParts.any { partScan -> partScan.contains(part) } }
+        .sumOf { part -> part.elements.values.sum() }
 
-    fun part2() = solve()
+    fun part2() = acceptedParts
         .map { part -> part.elements.values }
         .sumOf { ranges -> ranges.fold(1L) { result, range -> result * range.count() } }
 
-    fun solve(): List<PartScan> {
+    private fun scan(): List<PartScan> {
         val startingElements = listOf("x", "m", "s", "a").associateWith { (1..4000) }
         val startingPart = PartScan("in", startingElements)
 
@@ -107,11 +110,12 @@ class Day19(input: List<List<String>>) {
         }
     }
 
-
     data class PartScan(val target: String, val elements: Map<String, IntRange>) {
         fun withElement(replace: String, newValue: IntRange) =
             PartScan(target, elements.mapValues { (element, value) -> if (element == replace) newValue else value })
 
         fun withTarget(newTarget: String) = PartScan(newTarget, elements)
+        
+        fun contains(part: Part) = part.elements.all { (element, value) -> value in elements[element]!! }
     }
 }

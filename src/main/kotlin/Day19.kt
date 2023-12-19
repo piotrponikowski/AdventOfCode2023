@@ -11,10 +11,10 @@ class Day19(input: String) {
 
     fun solve2(): Long {
         val data = listOf("x", "m", "s", "a").associateWith { (1..4000) }
-        val start = AllParts("in", data)
+        val start = PartScan("in", data)
 
         val partsToCheck = mutableListOf(start)
-        val accepted = mutableListOf<AllParts>()
+        val accepted = mutableListOf<PartScan>()
 
         while (partsToCheck.isNotEmpty()) {
             var parts = partsToCheck.removeFirst()
@@ -27,7 +27,7 @@ class Day19(input: String) {
                     if (condition.target == "A") {
                         accepted += parts
                     } else if (condition.target != "R") {
-                        partsToCheck += AllParts(condition.target, parts.data)
+                        partsToCheck += PartScan(condition.target, parts.data)
                     }
                 } else {
                     val values = parts.data[condition.part]!!
@@ -38,15 +38,15 @@ class Day19(input: String) {
                                 parts.data.mapValues { if (it.key == condition.part) redirectValues else it.value }
 
                             if (condition.target == "A") {
-                                accepted += AllParts(condition.target, redirectData)
+                                accepted += PartScan(condition.target, redirectData)
                             } else if (condition.target != "R") {
-                                partsToCheck += AllParts(condition.target, redirectData)
+                                partsToCheck += PartScan(condition.target, redirectData)
                             }
 
                             val remainingValues = (condition.value..values.last)
                             val remainingData =
                                 parts.data.mapValues { if (it.key == condition.part) remainingValues else it.value }
-                            parts = AllParts(parts.workflow, remainingData)
+                            parts = PartScan(parts.workflow, remainingData)
 
                         } else if (condition.rule == ">") {
 
@@ -55,15 +55,15 @@ class Day19(input: String) {
                                 parts.data.mapValues { if (it.key == condition.part) redirectValues else it.value }
 
                             if (condition.target == "A") {
-                                accepted += AllParts(condition.target, redirectData)
+                                accepted += PartScan(condition.target, redirectData)
                             } else if (condition.target != "R") {
-                                partsToCheck += AllParts(condition.target, redirectData)
+                                partsToCheck += PartScan(condition.target, redirectData)
                             }
 
                             val remainingValues = (values.first..condition.value)
                             val remainingData =
                                 parts.data.mapValues { if (it.key == condition.part) remainingValues else it.value }
-                            parts = AllParts(parts.workflow, remainingData)
+                            parts = PartScan(parts.workflow, remainingData)
 
                         } else {
                             throw IllegalArgumentException()
@@ -77,9 +77,9 @@ class Day19(input: String) {
     }
 
 
-    fun solve(parts: Parts): Int {
+    fun solve(part: Part): Int {
         println()
-        println("solving $parts")
+        println("solving $part")
         var currentWorkflow = "in"
         var result: String? = null
 
@@ -90,7 +90,7 @@ class Day19(input: String) {
             var conditionFound = false
             workflow.conditions.forEach { condition ->
 
-                if (!conditionFound && checkCondition(parts, condition)) {
+                if (!conditionFound && checkCondition(part, condition)) {
                     conditionFound = true
                     println("found ${condition.target}")
                     if (condition.target in listOf("A", "R")) {
@@ -103,18 +103,18 @@ class Day19(input: String) {
         }
 
         if (result == "A") {
-            return parts.data.values.sum()
+            return part.data.values.sum()
         } else {
             return 0
         }
     }
 
-    private fun checkCondition(parts: Parts, condition: Condition): Boolean {
+    private fun checkCondition(part: Part, condition: Condition): Boolean {
         if (condition.part == null) {
             return true
         }
 
-        val partValue = parts.data[condition.part]!!
+        val partValue = part.data[condition.part]!!
         if (condition.rule == "<") {
             return partValue < condition.value!!
         } else if (condition.rule == ">") {
@@ -142,19 +142,19 @@ class Day19(input: String) {
         }
     }
 
-    private fun parseParts(input: String): Parts {
+    private fun parseParts(input: String): Part {
         val a = input.drop(1).dropLast(1).split(",").map { it.split("=") }
             .map { (a, b) -> a to b.toInt() }.toMap()
-        return Parts(a)
+        return Part(a)
     }
 
     data class Workflow(val name: String, val conditions: List<Condition>)
 
     data class Condition(val part: String?, val rule: String?, val value: Int?, val target: String)
 
-    data class Parts(val data: Map<String, Int>)
+    data class Part(val data: Map<String, Int>)
 
-    data class AllParts(val workflow: String, val data: Map<String, IntRange>)
+    data class PartScan(val workflow: String, val data: Map<String, IntRange>)
 
     companion object {
         private val PATTERN_WORKFLOW = Regex("""(\w+)\{(.*)}""")

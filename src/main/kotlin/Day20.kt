@@ -1,126 +1,104 @@
 class Day20(input: List<String>) {
 
-    private val modules = input.map { parseModule(it) }
+    private val modules = input.map { Module.parse(it) }
 
-    fun part1() {
-        solve()
+    fun part1(): Long {
+        val pulses = mutableListOf<Pulse>()
+        val machine = Machine(modules) { pulse, _ -> pulses.add(pulse) }
+
+        for (i in 1..1000) machine.pressButton()
+
+        return pulses
+            .groupBy { pulse -> pulse.type }.values
+            .fold(1L) { result, group -> result * group.size }
     }
 
-    fun part2() = 2
+    fun part2(): Long {
+        val pulses = mutableListOf<Pair<Pulse, Long>>()
+        val machine = Machine(modules) { pulse, counter -> pulses.add(pulse to counter) }
 
-    private fun solve() {
-        val flipFlopsState = modules
-            .map { it.name }
+        for (i in 1..5000) machine.pressButton()
+
+        return machine.relevantModules()
+            .map { input -> pulses.first { (pulse, _) -> pulse.moduleName == input && !pulse.type } }
+            .map { (_, counter) -> counter }
+            .reduce { result, counter -> lcm(result, counter) }
+    }
+
+
+    class Machine(private val modules: List<Module>, private val onPulse: (Pulse, Long) -> Unit) {
+        private val pulses = mutableListOf<Pulse>()
+        private var counter = 0L
+
+        private val states = modules
+            .map { module -> module.name }
             .associateWith { false }.toMutableMap()
 
-        val multiInputs = modules
-            .filter { it.type == ModuleType.CONJUNCTION }
-            .associate { c -> c.name to modules.filter { m -> m.outputs.contains(c.name) }.map { it.name } }
+        private val inputs = modules
+            .map { module -> module.name }
+            .associateWith { name -> modules.filter { other -> name in other.outputs }.map { other -> other.name } }
 
-        val results = mutableListOf<Boolean>()
-        val counts = mutableMapOf(true to 0, false to 0)
+        private fun sendPulse(pulse: Pulse) {
+            pulses.add(pulse)
+            onPulse(pulse, counter)
+        }
 
-        val moduleWithRX = modules.find { it.outputs.contains("rx") }!!
-        val rxInputs = multiInputs[moduleWithRX.name]!!
-        val rxInputValues = rxInputs.associateWith { 0L }.toMutableMap()
-        
-        var found = false
-        (1..10000).forEach { counter ->
+        fun relevantModules(): List<String> {
+            val endModule = modules.first { module -> "rx" in module.outputs }
+            return inputs[endModule.name]!!
+        }
 
-            val startingPulse = Pulse("broadcaster", false)
-            val pulses = mutableListOf(startingPulse)
-            counts[false] = counts[false]!! + 1
+        fun pressButton() {
+            counter += 1
+            sendPulse(Pulse("broadcaster", false))
 
-            while (pulses.isNotEmpty() && !found) {
+            while (pulses.isNotEmpty()) {
                 val pulse = pulses.removeFirst()
-                
-                val module = modules.find { it.name == pulse.module }
-                if (module == null) {
-                    results += pulse.type
-                    
-                    continue
-                }
-
-                if(pulse.module in rxInputs && !pulse.type) {
-                    rxInputValues[pulse.module] = counter.toLong()
-               
-                    if(rxInputValues.all { it.value > 1 }) {
-                        println(rxInputValues)
-                        found = true
-                    }
-                }
+                val module = modules.find { it.name == pulse.moduleName } ?: continue
 
                 if (module.type == ModuleType.BROADCASTER) {
-                    module.outputs.forEach { output ->
-                        pulses += Pulse(output, pulse.type)
-                        flipFlopsState[module.name] = pulse.type
-                        counts[pulse.type] = counts[pulse.type]!! + 1
-                    }
+                    states[module.name] = pulse.type
+                    module.outputs.forEach { output -> sendPulse(Pulse(output, pulse.type)) }
 
                 } else if (module.type == ModuleType.FLIP_FLOP) {
                     if (!pulse.type) {
-                        val state = flipFlopsState[module.name]!!
-                        flipFlopsState[module.name] = !state
+                        val pulseType = !states[pulse.moduleName]!!
 
-                        module.outputs.forEach { output ->
-                            pulses += Pulse(output, !state)
-                            counts[!state] = counts[!state]!! + 1
-                        }
+                        states[module.name] = pulseType
+                        module.outputs.forEach { output -> sendPulse(Pulse(output, pulseType)) }
                     }
                 } else if (module.type == ModuleType.CONJUNCTION) {
-                    val inputs = multiInputs[module.name]!!
-                    val allOn = inputs.all { i -> flipFlopsState[i]!! }
-                    if (allOn) {
-                        module.outputs.forEach { output ->
-                            pulses += Pulse(output, false)
-                            flipFlopsState[module.name] = false
-                            counts[false] = counts[false]!! + 1
-                        }
-                    } else {
-                        module.outputs.forEach { output ->
-                            pulses += Pulse(output, true)
-                            flipFlopsState[module.name] = true
-                            counts[true] = counts[true]!! + 1
-                        }
-                    }
+                    val pulseType = !inputs[module.name]!!.all { input -> states[input]!! }
+
+                    states[module.name] = pulseType
+                    module.outputs.forEach { output -> sendPulse(Pulse(output, pulseType)) }
                 }
             }
         }
-        println(counts)
-        println(counts[false]!! * counts[true]!!)
-        
-        println(rxInputValues.values.reduce { a, b -> lcm(a, b)})
     }
 
+    data class Pulse(val moduleName: String, val type: Boolean)
 
-    private fun parseModule(input: String): Module {
-        val (inputName, outputs) = input.split(" -> ")
-        val outputs2 = outputs.split(", ")
+    enum class ModuleType { BROADCASTER, FLIP_FLOP, CONJUNCTION }
 
-        return if (inputName.startsWith("&")) {
-            Module(inputName.drop(1), outputs2, ModuleType.CONJUNCTION)
-        } else if (inputName.startsWith("%")) {
-            Module(inputName.drop(1), outputs2, ModuleType.FLIP_FLOP)
-        } else if (inputName == "broadcaster") {
-            Module(inputName, outputs2, ModuleType.BROADCASTER)
-        } else {
-            throw IllegalArgumentException()
+    data class Module(val name: String, val outputs: List<String>, val type: ModuleType) {
+
+        companion object {
+            fun parse(input: String): Module {
+                val (name, outputsData) = input.split(" -> ")
+                val outputs = outputsData.split(", ")
+
+                return if (name.startsWith("&")) {
+                    Module(name.drop(1), outputs, ModuleType.CONJUNCTION)
+                } else if (name.startsWith("%")) {
+                    Module(name.drop(1), outputs, ModuleType.FLIP_FLOP)
+                } else if (name == "broadcaster") {
+                    Module(name, outputs, ModuleType.BROADCASTER)
+                } else {
+                    throw IllegalArgumentException()
+                }
+            }
+
         }
     }
-
-    data class Pulse(val module: String, val type: Boolean)
-
-    enum class ModuleType {
-        BROADCASTER, FLIP_FLOP, CONJUNCTION
-    }
-
-    data class Module(val name: String, val outputs: List<String>, val type: ModuleType)
-}
-
-fun main() {
-//    val input = readText("day20.txt", true)
-    val input = readLines("day20.txt")
-
-    val result = Day20(input).part1()
-    println(result)
 }

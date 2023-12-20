@@ -20,24 +20,34 @@ class Day20(input: List<String>) {
         val results = mutableListOf<Boolean>()
         val counts = mutableMapOf(true to 0, false to 0)
 
-        (1..1000_000).forEach { counter ->
+        val moduleWithRX = modules.find { it.outputs.contains("rx") }!!
+        val rxInputs = multiInputs[moduleWithRX.name]!!
+        val rxInputValues = rxInputs.associateWith { 0L }.toMutableMap()
+        
+        var found = false
+        (1..10000).forEach { counter ->
 
             val startingPulse = Pulse("broadcaster", false)
             val pulses = mutableListOf(startingPulse)
             counts[false] = counts[false]!! + 1
 
-            while (pulses.isNotEmpty()) {
+            while (pulses.isNotEmpty() && !found) {
                 val pulse = pulses.removeFirst()
                 
                 val module = modules.find { it.name == pulse.module }
                 if (module == null) {
                     results += pulse.type
                     
-                    if(pulse.module == "rx" && !pulse.type) {
-                        println("RX $counter ${pulse.type}")
-                    }
-                    
                     continue
+                }
+
+                if(pulse.module in rxInputs && !pulse.type) {
+                    rxInputValues[pulse.module] = counter.toLong()
+               
+                    if(rxInputValues.all { it.value > 1 }) {
+                        println(rxInputValues)
+                        found = true
+                    }
                 }
 
                 if (module.type == ModuleType.BROADCASTER) {
@@ -78,6 +88,8 @@ class Day20(input: List<String>) {
         }
         println(counts)
         println(counts[false]!! * counts[true]!!)
+        
+        println(rxInputValues.values.reduce { a, b -> lcm(a, b)})
     }
 
 

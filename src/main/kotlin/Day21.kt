@@ -55,10 +55,9 @@ class Day21(input: List<String>) {
             val neighbours = directions
                 .map { direction -> point + direction }
                 .filter { neighbour ->
-                    val wx = ((neighbour.x % boardWidth) + boardWidth) % boardWidth
-                    val wy = ((neighbour.y % boardHeight) + boardHeight) % boardHeight
-                    val warpPoint = Point(wx, wy)
-                    garden.contains(warpPoint)
+                    val x = ((neighbour.x % boardWidth) + boardWidth) % boardWidth
+                    val y = ((neighbour.y % boardHeight) + boardHeight) % boardHeight
+                    garden.contains(Point(x, y))
                 }
 
             newState += neighbours

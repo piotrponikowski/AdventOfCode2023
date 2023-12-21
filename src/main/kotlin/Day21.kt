@@ -4,31 +4,25 @@ class Day21(input: List<String>) {
         .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x.toLong(), y.toLong()) to symbol } }.toMap()
 
     private val startState = board.keys.filter { point -> board[point]!! == 'S' }.toSet()
-
-    private val directions = listOf(Point(-1, 0), Point(1, 0), Point(0, -1),Point(0, 1))
     
-    fun part1():Int {
-        var state = startState
+    private val boardWidth = board.keys.maxOf { point ->  point.x } + 1
+    
+    private val boardHeight = board.keys.maxOf { point -> point.y } + 1
+    
+    private val directions = listOf(Point(-1, 0), Point(1, 0), Point(0, -1), Point(0, 1))
+    
+    fun part1() = solve(64)
 
-        for (i in 1..64) {
-            state = step2(state)
-        }
-
-        return state.count()
-    }
-
-    fun part2() :Long {
-        val maxX = board.keys.maxOf { point -> point.x }.toInt()
-        val boardWidth = maxX + 1
+    fun part2(): Long {
         val boardCenter = (boardWidth - 1) / 2
 
         var step = 0
         var currentState = startState.toSet()
         val counts = mutableListOf<Long>()
-        
+
         while (counts.size < 3) {
             step++
-            currentState = step2(currentState)
+            currentState = step(currentState)
 
             if (step % boardWidth == boardCenter) {
                 counts += currentState.count().toLong()
@@ -44,7 +38,7 @@ class Day21(input: List<String>) {
 
         val stepsTotal = 26501365
         var stepsCounted = boardCenter + boardWidth + boardWidth
-        
+
         while (stepsCounted < stepsTotal) {
             delta1 += delta2
             result += delta1
@@ -54,19 +48,15 @@ class Day21(input: List<String>) {
         return result
     }
 
-
-    private fun step2(state: Set<Point>): Set<Point> {
-        val width = board.keys.maxOf { it.x } + 1
-        val height = board.keys.maxOf { it.y } + 1
-
+    private fun step(state: Set<Point>): Set<Point> {
         val newState = mutableSetOf<Point>()
         state.map { point ->
 
             val neighbours = directions
                 .map { direction -> point + direction }
                 .filter { neighbour ->
-                    val wx = ((neighbour.x % width) + width) % width
-                    val wy = ((neighbour.y % height) + height) % height
+                    val wx = ((neighbour.x % boardWidth) + boardWidth) % boardWidth
+                    val wy = ((neighbour.y % boardHeight) + boardHeight) % boardHeight
                     val warpPoint = Point(wx, wy)
                     val warpSymbol = board[warpPoint]!!
 
@@ -77,6 +67,16 @@ class Day21(input: List<String>) {
         }
 
         return newState
+    }
+    
+    fun solve(steps: Int): Int {
+        var state = startState
+
+        for (i in 1..steps) {
+            state = step(state)
+        }
+
+        return state.count()
     }
 
     data class Point(val x: Long, val y: Long) {

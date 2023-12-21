@@ -25,7 +25,6 @@ class Day20(input: List<String>) {
             .reduce { result, counter -> lcm(result, counter) }
     }
 
-
     class Machine(private val modules: List<Module>, private val onPulse: (Pulse, Long) -> Unit) {
         private val pulses = mutableListOf<Pulse>()
         private var counter = 0L

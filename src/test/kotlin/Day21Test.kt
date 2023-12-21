@@ -30,7 +30,9 @@ class Day21Test : FunSpec({
                 row(50, 1594),
                 row(100, 6536),
             ).forAll { steps, result ->
-                Day21(exampleInput).solve(steps) shouldBe result
+                test("Number of steps = $steps") {
+                    Day21(exampleInput).solve(steps) shouldBe result
+                }
             }
         }
 

@@ -4,9 +4,9 @@ class Day21(input: List<String>) {
         .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x.toLong(), y.toLong()) to symbol } }.toMap()
 
     private val startState = board.keys.filter { point -> board[point]!! == 'S' }.toSet()
+    private val garden = board.keys.filter { point -> board[point]!! in listOf('S', '.') }.toSet()
     
     private val boardWidth = board.keys.maxOf { point ->  point.x } + 1
-    
     private val boardHeight = board.keys.maxOf { point -> point.y } + 1
     
     private val directions = listOf(Point(-1, 0), Point(1, 0), Point(0, -1), Point(0, 1))
@@ -58,9 +58,7 @@ class Day21(input: List<String>) {
                     val wx = ((neighbour.x % boardWidth) + boardWidth) % boardWidth
                     val wy = ((neighbour.y % boardHeight) + boardHeight) % boardHeight
                     val warpPoint = Point(wx, wy)
-                    val warpSymbol = board[warpPoint]!!
-
-                    warpSymbol == '.' || warpSymbol == 'S'
+                    garden.contains(warpPoint)
                 }
 
             newState += neighbours

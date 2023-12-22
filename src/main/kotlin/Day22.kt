@@ -1,8 +1,6 @@
 class Day22(input: List<String>) {
 
-    private val bricks = input
-        .mapIndexed { index, line -> Brick.parse(index, line) }
-        .sortedBy { brick -> brick.lowestValue() }
+    private val bricks = input.mapIndexed { index, line -> Brick.parse(index, line) }
 
     fun part1() = solveFallen().count { fallenCount -> fallenCount == 0 }
 
@@ -24,28 +22,29 @@ class Day22(input: List<String>) {
     }
 
     private fun solve(startingState: List<Brick>): List<Brick> {
-        val state = startingState.associateBy { brick -> brick.id }.toMutableMap()
-        
-        state.keys.forEach { brickId ->
-            var brick = state[brickId]!!
+        val bricksToFall = startingState.sortedBy { brick -> brick.lowestPosition() }.toMutableList()
+        val fallenBricks = mutableListOf<Brick>()
+
+        while (bricksToFall.isNotEmpty()) {
+            var brick = bricksToFall.removeFirst()
             var continueFall = true
 
             while (continueFall) {
                 continueFall = false
 
-                if (brick.lowestValue() > 1) {
-                    val noOverlap = state.values.all { other -> brick.noOverlap(other) }
+                if (brick.lowestPosition() > 1) {
+                    val noOverlap = fallenBricks.all { other -> brick.noOverlap(other) }
                     if (noOverlap) {
                         brick = brick.fall()
                         continueFall = true
                     }
                 }
             }
-            
-            state[brickId] = brick
+
+            fallenBricks += brick
         }
 
-        return state.values.toList()
+        return fallenBricks
     }
 
     data class Brick(val id: Int, val points: List<Point>) {
@@ -55,9 +54,9 @@ class Day22(input: List<String>) {
 
         fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
 
-        fun lowestValue() = minZ
+        fun lowestPosition() = minZ
 
-        fun noOverlap(other: Brick) = (minZ - 1 > other.maxZ || id == other.id || points
+        fun noOverlap(other: Brick) = (minZ - 1 > other.maxZ || maxZ < other.minZ || points
             .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) })
 
         companion object {

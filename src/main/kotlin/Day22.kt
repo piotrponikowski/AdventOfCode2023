@@ -22,7 +22,7 @@ class Day22(input: List<String>) {
     }
 
     private fun processFall(startingState: List<Brick>): List<Brick> {
-        val bricksToFall = startingState.sortedBy { brick -> brick.lowestPosition() }.toMutableList()
+        val bricksToFall = startingState.sortedBy { brick -> brick.lowestPoint() }.toMutableList()
         val fallenBricks = mutableListOf<Brick>()
 
         while (bricksToFall.isNotEmpty()) {
@@ -32,10 +32,10 @@ class Day22(input: List<String>) {
             while (continueFall) {
                 continueFall = false
 
-                if (brick.lowestPosition() > 1) {
+                if (brick.lowestPoint() > 1) {
                     val fallenBrick = brick.fall()
                     val overlaps = fallenBricks.any { other -> fallenBrick.overlaps(other) }
-                    
+
                     if (!overlaps) {
                         brick = fallenBrick
                         continueFall = true
@@ -53,7 +53,7 @@ class Day22(input: List<String>) {
 
         fun fall() = Brick(id, x, y, z.first - 1..<z.last)
 
-        fun lowestPosition() = z.first
+        fun lowestPoint() = z.first
 
         fun overlaps(other: Brick) = rangeOverlaps(z, other.z) && rangeOverlaps(y, other.y) && rangeOverlaps(x, other.x)
 

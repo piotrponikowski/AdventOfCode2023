@@ -11,19 +11,20 @@ class Day22(input: List<String>) {
         val fallenCounts = mutableListOf<Int>()
 
         mainState.forEach { brickToDisintegrate ->
-            val newState = mainState - brickToDisintegrate
-            val stateAfterFall = processFall(newState)
-
-            val fallenBricks = mainState.subtract(stateAfterFall.toSet()) - brickToDisintegrate
+            val stateAfterFall = processFall(mainState, brickToDisintegrate)
+            val fallenBricks = mainState - stateAfterFall.toSet() - brickToDisintegrate
             fallenCounts += fallenBricks.size
         }
 
         return fallenCounts
     }
 
-    private fun processFall(startingState: List<Brick>): List<Brick> {
-        val bricksToFall = startingState.sortedBy { brick -> brick.lowestPoint() }.toMutableList()
-        val fallenBricks = mutableListOf<Brick>()
+    private fun processFall(startingState: List<Brick>, brickToDisintegrate: Brick? = null): List<Brick> {
+        val toFallIndex = if (brickToDisintegrate != null) startingState.indexOf(brickToDisintegrate) + 1 else 0
+        val fallenIndex = if (brickToDisintegrate != null) startingState.indexOf(brickToDisintegrate) else 0
+
+        val bricksToFall = startingState.drop(toFallIndex).sortedBy { brick -> brick.lowestPoint() }.toMutableList()
+        val fallenBricks = startingState.take(fallenIndex).toMutableList()
 
         while (bricksToFall.isNotEmpty()) {
             var brick = bricksToFall.removeFirst()

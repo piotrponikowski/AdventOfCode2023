@@ -17,7 +17,6 @@ class Day22(input: List<String>) {
             val fallenState = solve(newState)
 
             val fallen = mainState.subtract(fallenState.toSet()) - brick
-            println(fallen.size)
             result += fallen.size
         }
 

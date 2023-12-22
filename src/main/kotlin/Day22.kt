@@ -33,9 +33,11 @@ class Day22(input: List<String>) {
                 continueFall = false
 
                 if (brick.lowestPosition() > 1) {
-                    val noOverlap = fallenBricks.all { other -> brick.noOverlap(other) }
-                    if (noOverlap) {
-                        brick = brick.fall()
+                    val fallenBrick = brick.fall()
+                    val overlaps = fallenBricks.any { other -> fallenBrick.overlaps(other) }
+                    
+                    if (!overlaps) {
+                        brick = fallenBrick
                         continueFall = true
                     }
                 }
@@ -47,38 +49,30 @@ class Day22(input: List<String>) {
         return fallenBricks
     }
 
-    data class Brick(val id: Int, val points: List<Point>) {
+    data class Brick(val id: Int, val x: IntRange, val y: IntRange, val z: IntRange) {
 
-        private val minZ = points.minOf { point -> point.z }
-        private val maxZ = points.maxOf { point -> point.z }
+        fun fall() = Brick(id, x, y, z.first - 1..<z.last)
 
-        fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
+        fun lowestPosition() = z.first
 
-        fun lowestPosition() = minZ
+        fun overlaps(other: Brick) = rangeOverlaps(z, other.z) && rangeOverlaps(y, other.y) && rangeOverlaps(x, other.x)
 
-        fun noOverlap(other: Brick) = (minZ - 1 > other.maxZ || maxZ < other.minZ || points
-            .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) })
+        private fun rangeOverlaps(r1: IntRange, r2: IntRange) = r1.first <= r2.last && r1.last >= r2.first
 
         companion object {
             fun parse(index: Int, input: String): Brick {
                 val (start, end) = input.split("~")
-                    .map { pointsInput -> pointsInput.split(",").map { it.toLong() } }
-                    .map { (x, y, z) -> Point(x, y, z) }
+                    .map { points -> points.split(",").map { point -> point.toInt() } }
 
-                val rangeX = if (end.x < start.x) end.x..start.x else start.x..end.x
-                val rangeY = if (end.y < start.y) end.y..start.y else start.y..end.y
-                val rangeZ = if (end.z < start.z) end.z..start.z else start.z..end.z
+                val (x1, y1, z1) = start
+                val (x2, y2, z2) = end
 
-                val points = rangeX.flatMap { x ->
-                    rangeY.flatMap { y ->
-                        rangeZ.map { z -> Point(x, y, z) }
-                    }
-                }
+                val x = if (x1 < x2) x1..x2 else x2..x1
+                val y = if (y1 < y2) y1..y2 else y2..y1
+                val z = if (z1 < z2) z1..z2 else z2..z1
 
-                return Brick(index + 1, points)
+                return Brick(index + 1, x, y, z)
             }
         }
     }
-
-    data class Point(val x: Long, val y: Long, val z: Long)
 }

@@ -8,17 +8,17 @@ class Day22(input: List<String>) {
 
     private fun disintegrate(): List<Int> {
         val mainState = processFall(bricks)
-        val result = mutableListOf<Int>()
+        val fallenCounts = mutableListOf<Int>()
 
-        mainState.forEach { brick ->
-            val newState = mainState - brick
+        mainState.forEach { brickToDisintegrate ->
+            val newState = mainState - brickToDisintegrate
             val stateAfterFall = processFall(newState)
 
-            val fallen = mainState.subtract(stateAfterFall.toSet()) - brick
-            result += fallen.size
+            val fallenBricks = mainState.subtract(stateAfterFall.toSet()) - brickToDisintegrate
+            fallenCounts += fallenBricks.size
         }
 
-        return result
+        return fallenCounts
     }
 
     private fun processFall(startingState: List<Brick>): List<Brick> {

@@ -2,7 +2,7 @@ class Day22(input: List<String>) {
 
     private val bricks = input
         .mapIndexed { index, line -> Brick.parse(index, line) }
-        .sortedBy { brick -> brick.minZ }
+        .sortedBy { brick -> brick.minZ() }
 
     fun part1() = solveFallen().count { it == 0 }
 
@@ -55,17 +55,18 @@ class Day22(input: List<String>) {
     }
 
     data class Brick(val id: Int, val points: List<Point>) {
-        fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
-        fun canFall(other: Brick) = minZ > 1 && (id == other.id || minZ - 1 > other.maxZ ||
-                bottomPoints.none { point -> other.topPoints.contains(Point(point.x, point.y, point.z - 1)) })
 
-        val minZ = points.minOf { point -> point.z }
-
+        private val minZ = points.minOf { point -> point.z }
         private val maxZ = points.maxOf { point -> point.z }
 
-        private val bottomPoints = points.filter { point -> point.z == minZ }
+        fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
 
-        private val topPoints = points.filter { point -> point.z == maxZ }
+        fun canFall(other: Brick) = minZ > 1 && (minZ - 1 > other.maxZ || id == other.id || noOverlap(other))
+
+        fun minZ() = minZ
+
+        private fun noOverlap(other: Brick) = points
+            .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) }
 
         companion object {
             fun parse(index: Int, input: String): Brick {

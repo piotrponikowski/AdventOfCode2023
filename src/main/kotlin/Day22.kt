@@ -10,14 +10,11 @@ class Day22(input: List<String>) {
         .mapIndexed { index, (a, b) -> Brick(index + 1, a, b) }
 
 
-    fun part1() {
-        solve()
-        println()
-    }
+    fun part1() = score(solve())
 
     fun part2() = 2
 
-    fun solve() {
+    fun solve(): List<Brick> {
         var state = bricks.toList()
         val ids = bricks.map { it.id }
 
@@ -25,12 +22,8 @@ class Day22(input: List<String>) {
         while (changed) {
             changed = false
 
-            println()
-            println("#################")
-
             ids.forEach { id ->
-         
-            
+
                 val brick = state.find { it.id == id }!!
                 val minZ = brick.minZ()
                 val checkZ = minZ - 1
@@ -38,7 +31,7 @@ class Day22(input: List<String>) {
                 if (checkZ > 0) {
                     val rangeX = brick.rangeX
                     val rangeY = brick.rangeY
-                    val area = rangeX.count() *  rangeY.count()
+                    val area = rangeX.count() * rangeY.count()
 
                     val emptyBelow = rangeY.sumOf { y ->
                         rangeX.count { x ->
@@ -47,21 +40,21 @@ class Day22(input: List<String>) {
                     }
 
                     if (emptyBelow == area) {
-                        //println("Falling $brick")
                         state = state.map { b -> if (b.id == id) b.fall() else b }
                         changed = true
-                    } else {
-                        //println("Not falling $brick")
                     }
                 }
             }
         }
+        return state
+    }
 
-        var result = 0
+    fun score(state: List<Brick>): Int {
+
         val supportedBy = state.map { brick ->
             val rangeX = brick.rangeX
             val rangeY = brick.rangeY
-            
+
             val minZ = brick.minZ()
             val checkZ = minZ - 1
 
@@ -70,16 +63,16 @@ class Day22(input: List<String>) {
                     state.filter { other -> other.id != brick.id && other.contain(Point(x, y, checkZ)) }
                 }
             }.toSet()
-            
+
             brick.id to bricksBelow.map { it.id }
         }
-        
+
         val canRemove = bricks.filter { brick ->
             val neededFor = supportedBy.filter { brick.id in it.second }
             neededFor.all { other -> other.second.size > 1 }
         }
-        
-        println(canRemove.size)
+
+        return canRemove.size
     }
 
     data class Brick(val id: Int, val start: Point, val end: Point) {

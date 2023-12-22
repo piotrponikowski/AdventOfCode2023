@@ -2,26 +2,26 @@ class Day22(input: List<String>) {
 
     private val bricks = input.mapIndexed { index, line -> Brick.parse(index, line) }
 
-    fun part1() = solveFallen().count { fallenCount -> fallenCount == 0 }
+    fun part1() = disintegrate().count { fallenCount -> fallenCount == 0 }
 
-    fun part2() = solveFallen().sum()
+    fun part2() = disintegrate().sum()
 
-    private fun solveFallen(): List<Int> {
-        val mainState = solve(bricks)
+    private fun disintegrate(): List<Int> {
+        val mainState = processFall(bricks)
         val result = mutableListOf<Int>()
 
         mainState.forEach { brick ->
             val newState = mainState - brick
-            val fallenState = solve(newState)
+            val stateAfterFall = processFall(newState)
 
-            val fallen = mainState.subtract(fallenState.toSet()) - brick
+            val fallen = mainState.subtract(stateAfterFall.toSet()) - brick
             result += fallen.size
         }
 
         return result
     }
 
-    private fun solve(startingState: List<Brick>): List<Brick> {
+    private fun processFall(startingState: List<Brick>): List<Brick> {
         val bricksToFall = startingState.sortedBy { brick -> brick.lowestPosition() }.toMutableList()
         val fallenBricks = mutableListOf<Brick>()
 
@@ -80,7 +80,5 @@ class Day22(input: List<String>) {
         }
     }
 
-    data class Point(val x: Long, val y: Long, val z: Long) {
-        operator fun plus(other: Point) = Point(x + other.x, y + other.y, z + other.z)
-    }
+    data class Point(val x: Long, val y: Long, val z: Long)
 }

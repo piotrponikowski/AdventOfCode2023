@@ -2,9 +2,9 @@ class Day22(input: List<String>) {
 
     private val bricks = input
         .mapIndexed { index, line -> Brick.parse(index, line) }
-        .sortedBy { brick -> brick.minZ() }
+        .sortedBy { brick -> brick.lowestValue() }
 
-    fun part1() = solveFallen().count { it == 0 }
+    fun part1() = solveFallen().count { fallenCount -> fallenCount == 0 }
 
     fun part2() = solveFallen().sum()
 
@@ -37,15 +37,16 @@ class Day22(input: List<String>) {
                 while (reCheck) {
                     reCheck = false
 
-                    val canFall = state.values.all { other -> brick.canFall(other) }
-                    if (canFall) {
-                        val fallenBrick = brick.fall()
-                        state[brickId] = fallenBrick
-                        brick = fallenBrick
-                        changed = true
-                        reCheck = true
+                    if(brick.lowestValue() > 1) {
+                        val noOverlap = state.values.all { other -> brick.noOverlap(other) }
+                        if (noOverlap) {
+                            val fallenBrick = brick.fall()
+                            state[brickId] = fallenBrick
+                            brick = fallenBrick
+                            changed = true
+                            reCheck = true
+                        }
                     }
-
                 }
             }
         }
@@ -60,12 +61,10 @@ class Day22(input: List<String>) {
 
         fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
 
-        fun canFall(other: Brick) = minZ > 1 && (minZ - 1 > other.maxZ || id == other.id || noOverlap(other))
-
-        fun minZ() = minZ
-
-        private fun noOverlap(other: Brick) = points
-            .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) }
+        fun lowestValue() = minZ
+        
+        fun noOverlap(other: Brick) = (minZ - 1 > other.maxZ || id == other.id || points
+            .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) })
 
         companion object {
             fun parse(index: Int, input: String): Brick {

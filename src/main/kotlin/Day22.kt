@@ -1,126 +1,95 @@
-import kotlin.math.min
-
 class Day22(input: List<String>) {
 
-    private val bricks = input.map { line -> line.split("~") }
-        .map { points ->
-            points.map { point -> point.split(",").map { it.toLong() } }
-                .map { points2 -> points2.let { (a, b, c) -> Point(a, b, c) } }
-        }
-        .mapIndexed { index, (a, b) -> Brick(index + 1, a, b) }
+    private val bricks = input
+        .mapIndexed { index, line -> Brick.parse(index, line) }
+        .sortedBy { brick -> brick.minZ }
 
+    fun part1() = solveFallen().count { it == 0 }
+    
+    fun part2() = solveFallen().sum()
 
-    fun part1() = score(solve(bricks))
+    private fun solveFallen(): List<Int> {
+        val mainState = solve(bricks)
+        val result = mutableListOf<Int>()
 
-    fun part2():Int {
-        val state = solve(bricks)
-        var result = 0
-        state.forEach {brick ->
-            val newBricks = state - brick
-            val newState = solve(newBricks)
-            val fallen = state.subtract(newState.toSet()) - brick
+        mainState.forEach { brick ->
+            val newState = mainState - brick
+            val fallenState = solve(newState)
+
+            val fallen = mainState.subtract(fallenState.toSet()) - brick
             println(fallen.size)
             result += fallen.size
         }
-        println()
-        println(result)
+
         return result
     }
 
-
-    fun solve(startingState:List<Brick>): List<Brick> {
-        val state = startingState.associateBy { it.id }.toMutableMap()
-        
-        val ids = startingState.sortedBy { it.minZ() }.map { it.id }
+    private fun solve(startingState: List<Brick>): List<Brick> {
+        val state = startingState.associateBy { brick -> brick.id }.toMutableMap()
 
         var changed = true
         while (changed) {
             changed = false
 
-            ids.forEach { id ->
-                
-                var recheck = true
+            state.keys.forEach { brickId ->
+                var brick = state[brickId]!!
+                var reCheck = true
 
-                while(recheck) {
-                    recheck = false
+                while (reCheck) {
+                    reCheck = false
 
-                    val brick = state[id]!!
-                    val minZ = brick.minZ()
-                    val checkZ = minZ - 1
+                    if (brick.minZ > 1) {
+                        val fallenBrick = brick.fall()
+                        val noOverlap = state.values.none { other -> fallenBrick.overlap(other) }
 
-                    if (checkZ > 0) {
-                        val rangeX = brick.rangeX
-                        val rangeY = brick.rangeY
-
-                        val emptyBelow = rangeY.all { y ->
-                            rangeX.all { x ->
-                                state.values.none { other -> other.id != id && other.contain(Point(x, y, checkZ)) }
-                            }
-                        }
-
-                        if (emptyBelow) {
-                            state[id] = brick.fall()
+                        if (noOverlap) {
+                            state[brickId] = fallenBrick
+                            brick = fallenBrick
                             changed = true
-                            recheck = true
+                            reCheck = true
                         }
                     }
                 }
             }
         }
+
         return state.values.toList()
     }
 
-    fun score(state: List<Brick>): Int {
+    data class Brick(val id: Int, val points: List<Point>) {
+        fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
+        fun overlap(other: Brick) = id != other.id && bottomPoints.any { point -> other.topPoints.contains(point) }
 
-        val supportedBy = state.map { brick ->
-            val rangeX = brick.rangeX
-            val rangeY = brick.rangeY
+        val minZ = points.minOf { point -> point.z }
 
-            val minZ = brick.minZ()
-            val checkZ = minZ - 1
+        private val maxZ = points.maxOf { point -> point.z }
 
-            val bricksBelow = rangeY.flatMap { y ->
-                rangeX.flatMap { x ->
-                    state.filter { other -> other.id != brick.id && other.contain(Point(x, y, checkZ)) }
+        private val bottomPoints = points.filter { point -> point.z == minZ }
+
+        private val topPoints = points.filter { point -> point.z == maxZ }
+
+        companion object {
+            fun parse(index: Int, input: String): Brick {
+                val (start, end) = input.split("~")
+                    .map { pointsInput -> pointsInput.split(",").map { it.toLong() } }
+                    .map { (x, y, z) -> Point(x, y, z) }
+
+                val rangeX = if (end.x < start.x) end.x..start.x else start.x..end.x
+                val rangeY = if (end.y < start.y) end.y..start.y else start.y..end.y
+                val rangeZ = if (end.z < start.z) end.z..start.z else start.z..end.z
+
+                val points = rangeX.flatMap { x ->
+                    rangeY.flatMap { y ->
+                        rangeZ.map { z -> Point(x, y, z) }
+                    }
                 }
-            }.toSet()
 
-            brick.id to bricksBelow.map { it.id }
+                return Brick(index + 1, points)
+            }
         }
-
-        val canRemove = bricks.filter { brick ->
-            val neededFor = supportedBy.filter { brick.id in it.second }
-            neededFor.all { other -> other.second.size > 1 }
-        }
-
-        return canRemove.size
-    }
-
-    data class Brick(val id: Int, val start: Point, val end: Point) {
-
-        val rangeX = if (end.x < start.x) end.x..start.x else start.x..end.x
-        val rangeY = if (end.y < start.y) end.y..start.y else start.y..end.y
-        val rangeZ = if (end.z < start.z) end.z..start.z else start.z..end.z
-
-
-        fun minZ() = min(start.z, end.z)
-
-        fun maxZ() = min(start.z, end.z)
-
-        fun contain(point: Point) = point.x in rangeX && point.y in rangeY && point.z in rangeZ
-        fun fall() = Brick(id, Point(start.x, start.y, start.z - 1), Point(end.x, end.y, end.z - 1))
-
     }
 
     data class Point(val x: Long, val y: Long, val z: Long) {
         operator fun plus(other: Point) = Point(x + other.x, y + other.y, z + other.z)
     }
-}
-
-fun main() {
-//    val input = readText("day22.txt", true)
-    val input = readLines("day22.txt")
-
-    val result = Day22(input).part2()
-    println(result)
 }

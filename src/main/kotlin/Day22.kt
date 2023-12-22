@@ -5,7 +5,7 @@ class Day22(input: List<String>) {
         .sortedBy { brick -> brick.minZ }
 
     fun part1() = solveFallen().count { it == 0 }
-    
+
     fun part2() = solveFallen().sum()
 
     private fun solveFallen(): List<Int> {
@@ -38,17 +38,15 @@ class Day22(input: List<String>) {
                 while (reCheck) {
                     reCheck = false
 
-                    if (brick.minZ > 1) {
+                    val canFall = state.values.all { other -> brick.canFall(other) }
+                    if (canFall) {
                         val fallenBrick = brick.fall()
-                        val noOverlap = state.values.none { other -> fallenBrick.overlap(other) }
-
-                        if (noOverlap) {
-                            state[brickId] = fallenBrick
-                            brick = fallenBrick
-                            changed = true
-                            reCheck = true
-                        }
+                        state[brickId] = fallenBrick
+                        brick = fallenBrick
+                        changed = true
+                        reCheck = true
                     }
+
                 }
             }
         }
@@ -58,7 +56,8 @@ class Day22(input: List<String>) {
 
     data class Brick(val id: Int, val points: List<Point>) {
         fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
-        fun overlap(other: Brick) = id != other.id && bottomPoints.any { point -> other.topPoints.contains(point) }
+        fun canFall(other: Brick) = minZ > 1 && (id == other.id || minZ - 1 > other.maxZ ||
+                bottomPoints.none { point -> other.topPoints.contains(Point(point.x, point.y, point.z - 1)) })
 
         val minZ = points.minOf { point -> point.z }
 

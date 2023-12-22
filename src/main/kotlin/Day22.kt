@@ -10,13 +10,27 @@ class Day22(input: List<String>) {
         .mapIndexed { index, (a, b) -> Brick(index + 1, a, b) }
 
 
-    fun part1() = score(solve())
+    fun part1() = score(solve(bricks))
 
-    fun part2() = 2
+    fun part2():Int {
+        val state = solve(bricks)
+        var result = 0
+        state.forEach {brick ->
+            val newBricks = state - brick
+            val newState = solve(newBricks)
+            val fallen = state.subtract(newState.toSet()) - brick
+            println(fallen.size)
+            result += fallen.size
+        }
+        println()
+        println(result)
+        return result
+    }
+    
 
-    fun solve(): List<Brick> {
-        var state = bricks.toList()
-        val ids = bricks.map { it.id }
+    fun solve(startingState:List<Brick>): List<Brick> {
+        var state = startingState.toList()
+        val ids = startingState.map { it.id }
 
         var changed = true
         while (changed) {
@@ -100,6 +114,6 @@ fun main() {
 //    val input = readText("day22.txt", true)
     val input = readLines("day22.txt")
 
-    val result = Day22(input).part1()
+    val result = Day22(input).part2()
     println(result)
 }

@@ -25,30 +25,24 @@ class Day22(input: List<String>) {
 
     private fun solve(startingState: List<Brick>): List<Brick> {
         val state = startingState.associateBy { brick -> brick.id }.toMutableMap()
+        
+        state.keys.forEach { brickId ->
+            var brick = state[brickId]!!
+            var continueFall = true
 
-        var changed = true
-        while (changed) {
-            changed = false
+            while (continueFall) {
+                continueFall = false
 
-            state.keys.forEach { brickId ->
-                var brick = state[brickId]!!
-                var reCheck = true
-
-                while (reCheck) {
-                    reCheck = false
-
-                    if(brick.lowestValue() > 1) {
-                        val noOverlap = state.values.all { other -> brick.noOverlap(other) }
-                        if (noOverlap) {
-                            val fallenBrick = brick.fall()
-                            state[brickId] = fallenBrick
-                            brick = fallenBrick
-                            changed = true
-                            reCheck = true
-                        }
+                if (brick.lowestValue() > 1) {
+                    val noOverlap = state.values.all { other -> brick.noOverlap(other) }
+                    if (noOverlap) {
+                        brick = brick.fall()
+                        continueFall = true
                     }
                 }
             }
+            
+            state[brickId] = brick
         }
 
         return state.values.toList()
@@ -62,7 +56,7 @@ class Day22(input: List<String>) {
         fun fall() = Brick(id, points.map { point -> Point(point.x, point.y, point.z - 1) })
 
         fun lowestValue() = minZ
-        
+
         fun noOverlap(other: Brick) = (minZ - 1 > other.maxZ || id == other.id || points
             .none { point -> other.points.contains(Point(point.x, point.y, point.z - 1)) })
 

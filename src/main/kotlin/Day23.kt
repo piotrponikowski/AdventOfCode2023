@@ -1,5 +1,3 @@
-import javax.print.attribute.SetOfIntegerSyntax
-
 class Day23(input: List<String>) {
 
     private val board = input
@@ -27,37 +25,53 @@ class Day23(input: List<String>) {
     fun part2() = 2
 
     private fun solve(): List<Path> {
-        val startPath = Path(start, setOf(start), setOf())
+        val startPath = Path(start, setOf(start))
 
-        val paths = mutableListOf(startPath)
+        var paths = mutableListOf(startPath)
         val visitedPaths = mutableSetOf(startPath)
 
         while (paths.isNotEmpty()) {
-            val path = paths.removeFirst()
+            paths = paths.sortedBy { -it.points.size }.toMutableList()
+            
+            val path = paths.removeLast()
             val tile = board[path.position]!!
 
             val neighbours = directions[tile]!!
                 .map { direction -> path.position + direction }
+                .filter { neighbour ->
+                    val newTile = board[neighbour]
+                    newTile != null && newTile != '#'
+                }
 
             neighbours.forEach { neighbour ->
-                val newTile = board[neighbour]
-                if (newTile != null && newTile != '#' && !path.points.contains(neighbour) && !path.checkpoints.contains(neighbour)) {
+                if (!path.points.contains(neighbour)) {
+
+                    val newNeighbours = directions[tile]!!
+                        .map { direction -> neighbour + direction }
+                        .filter { newNeighbour ->
+                            val newTile = board[newNeighbour]
+                            newTile != null && newTile != '#'
+                        }
                     
-                    val checkpoint = newTile != '.'
-                    
+                    val checkpoint = newNeighbours.size > 2
+
                     val newPath = path.go(neighbour, checkpoint)
                     if (!visitedPaths.contains(newPath)) {
                         paths += newPath
                         visitedPaths += newPath
                     }
+                    
+                    if(neighbour == end) {
+                        println(path)
+                    }
                 }
             }
         }
 
-        val finishedPaths = visitedPaths.filter { it.position == end }.maxBy { it.counter }
+        val finishedPaths = visitedPaths.filter { it.position == end }.maxBy { it.points.size }
 //        printPath(finishedPaths)
 
-        println(finishedPaths.counter)
+        println(finishedPaths.points.size - 1)
         return listOf()
     }
 
@@ -76,15 +90,14 @@ class Day23(input: List<String>) {
         }
     }
 
-    data class Path(val position: Point, val points: Set<Point>, val checkpoints: Set<Point>, val counter: Int = 0) {
+    data class Path(val position: Point, val points: Set<Point>, val counter: Int = 0) {
         fun go(newPosition: Point, checkpoint: Boolean): Path {
             return if (checkpoint) {
-                Path(newPosition, setOf(newPosition), checkpoints + newPosition, counter + 1)
+                Path(newPosition, points + newPosition, counter + 1)
             } else {
-                Path(newPosition, points + newPosition, checkpoints, counter + 1)
+                Path(newPosition, points, counter + 1)
             }
         }
-
     }
 
     data class Point(val x: Int, val y: Int) {

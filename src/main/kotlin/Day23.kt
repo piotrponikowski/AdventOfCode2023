@@ -40,8 +40,7 @@ class Day23(input: List<String>) {
             neighbours.size > 2
         }
 
-        val allJunctions = (listOf(start) + junctions + listOf(end))
-
+        val allJunctions = junctions + start + end
         return allJunctions.mapIndexed { index, position -> Junction(index, position) }
     }
 

@@ -1,53 +1,76 @@
-import kotlin.math.max
-
 class Day23(input: List<String>) {
 
-    private val board = input
-        .flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol } }.toMap()
+    private val board =
+        input.flatMapIndexed { y, line -> line.mapIndexed { x, symbol -> Point(x, y) to symbol } }.toMap()
 
-    private val maxX = board.keys.maxOf { point -> point.x }
+    private val forestPoints = board.keys.filter { point -> board[point]!! == '#' }.toSet()
+    private val walkablePoints = (board.keys - forestPoints).toSet()
+    
     private val maxY = board.keys.maxOf { point -> point.y }
-
     private val start = board.keys.first { point -> point.y == 0 && board[point]!! == '.' }
     private val end = board.keys.first { point -> point.y == maxY && board[point]!! == '.' }
 
-    private val directions = mapOf(
-        '>' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
-        '<' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
-        'v' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
-        '^' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
+    private val slopes = mapOf(
+        '>' to listOf(Direction.R),
+        '<' to listOf(Direction.L),
+        'v' to listOf(Direction.D),
+        '^' to listOf(Direction.U),
         '.' to listOf(Direction.L, Direction.R, Direction.U, Direction.D)
     )
 
-    fun part1() = 1
+    fun part1() = solve(false)
 
-    fun part2()   =  solveCrossroads()
+    fun part2() = solve(true)
 
-    private fun solveCrossroads():Int {
-        val slopes = board.keys.filter { point -> board[point] in listOf('<', '>', 'v', '^') } + start + end
-        val junctions = board.keys.filter { point ->
-            val tile = board[point]!!
-
-            if (tile != '#') {
-                val neighbours = directions[tile]!!
-                    .map { direction -> point + direction }
-                    .filter { neighbour ->
-                        val newTile = board[neighbour]
-                        newTile != null && newTile != '#'
-                    }
-
-                neighbours.size > 2
-            } else {
-                false
-            }
-        } + start + end
-
-        val slopPaths = junctions.associateWith { a -> solveSlope(a, junctions) }
-        
-        return solve(slopPaths)
+    private fun solve(climbSlopes: Boolean): Int {
+        val junctions = findJunctions()
+        val routes = junctions.associateWith { junction -> calculateRoutes(junction, junctions, climbSlopes) }
+        return calculateMaxPath(routes)
     }
 
-    private fun solve(slopePaths: Map<Point, List<SlopePath>>):Int {
+    private fun findJunctions(): List<Point> {
+        val junctions = walkablePoints.filter { point ->
+            val neighbours = Direction.entries
+                .map { direction -> point + direction }
+                .map { neighbour -> board[neighbour] }
+                .filter { newTile -> newTile != null && newTile != '#' }
+
+            neighbours.size > 2
+        }
+
+        return junctions + start + end
+    }
+
+    private fun calculateRoutes(start: Point, other: List<Point>, climbSlopes: Boolean): List<Route> {
+        val startPath = Path(start, setOf(start))
+
+        val paths = mutableListOf(startPath)
+        val validPaths = mutableListOf<Path>()
+
+        while (paths.isNotEmpty()) {
+            val path = paths.removeFirst()
+            val tile = if(climbSlopes) '.' else board[path.currentPosition]!!
+
+            val neighbours = slopes[tile]!!
+                .map { direction -> path.currentPosition + direction }
+                .filter { neighbour -> neighbour in walkablePoints }
+
+            neighbours.forEach { neighbour ->
+                if (!path.points.contains(neighbour)) {
+                    val newPath = Path(neighbour, path.points + neighbour, path.distance + 1)
+                    if (other.contains(neighbour)) {
+                        validPaths += newPath
+                    } else {
+                        paths += newPath
+                    }
+                }
+            }
+        }
+
+        return validPaths.map { path -> Route(start, path.currentPosition, path.distance) }
+    }
+
+    private fun calculateMaxPath(routes: Map<Point, List<Route>>): Int {
         val startPath = Path(start, setOf(start))
 
         val paths = mutableListOf(startPath)
@@ -55,17 +78,15 @@ class Day23(input: List<String>) {
 
         while (paths.isNotEmpty()) {
             val path = paths.removeLast()
-            
-            val possiblePaths = slopePaths[path.position]!!
+            val possibleRoutes = routes[path.currentPosition]!!
 
-            possiblePaths.forEach { nextPath ->
-                if (!path.points.contains(nextPath.end)) {
-                    val newPath = path.merge(nextPath.end, nextPath.counter)
-                    
-                    if (newPath.position == end) {
-                        if (newPath.counter > maxCounter) {
-                            maxCounter = newPath.counter
-                            println(maxCounter)
+            possibleRoutes.forEach { route ->
+                if (!path.points.contains(route.end)) {
+                    val newPath = Path(route.end, path.points + route.end, path.distance + route.distance)
+
+                    if (newPath.currentPosition == end) {
+                        if (newPath.distance > maxCounter) {
+                            maxCounter = newPath.distance
                         }
                     } else {
                         paths += newPath
@@ -73,55 +94,13 @@ class Day23(input: List<String>) {
                 }
             }
         }
+
         return maxCounter
     }
 
-    private fun solveSlope(start: Point, other: List<Point>): List<SlopePath> {
-        val startPath = Path(start, setOf(start))
+    data class Route(val start: Point, val end: Point, val distance: Int)
 
-        val paths = mutableListOf(startPath)
-        val visitedPaths = mutableSetOf(startPath)
-
-        val finishedPaths = mutableListOf<Path>()
-
-        while (paths.isNotEmpty()) {
-            val path = paths.removeFirst()
-            val tile = board[path.position]!!
-
-            val neighbours = directions[tile]!!
-                .map { direction -> path.position + direction }
-                .filter { neighbour ->
-                    val newTile = board[neighbour]
-                    newTile != null && newTile != '#'
-                }
-            
-            neighbours.forEach { neighbour ->
-                if (!path.points.contains(neighbour)) {
-
-                    val newPath = path.go(neighbour)
-                    if (!visitedPaths.contains(newPath)) {
-                        if (!other.contains(neighbour)) {
-                            paths += newPath
-                            visitedPaths += newPath
-                        } else {
-                            finishedPaths += newPath
-                        }
-
-                    }
-                }
-            }
-        }
-
-        return finishedPaths.map { path -> SlopePath(start, path.position, path.counter) }
-    }
-
-    data class SlopePath(val start: Point, val end: Point, val counter: Int)
-
-    data class Path(val position: Point, val points: Set<Point>, val counter: Int = 0) {
-        fun go(newPosition: Point) = Path(newPosition, points + newPosition, counter + 1)
-        fun merge(newPosition: Point, newCounter: Int) =
-            Path(newPosition, points + newPosition, counter + newCounter)
-    }
+    data class Path(val currentPosition: Point, val points: Set<Point>, val distance: Int = 0)
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)
@@ -130,12 +109,4 @@ class Day23(input: List<String>) {
     enum class Direction(val x: Int, val y: Int) {
         L(-1, 0), R(1, 0), U(0, -1), D(0, 1)
     }
-}
-
-fun main() {
-//    val input = readText("day23.txt", true)
-    val input = readLines("day23.txt")
-
-    val result = Day23(input).part1()
-    println(result)
 }

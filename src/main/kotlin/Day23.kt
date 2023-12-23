@@ -19,15 +19,11 @@ class Day23(input: List<String>) {
         '.' to listOf(Direction.L, Direction.R, Direction.U, Direction.D)
     )
 
-    fun part1() {
-        solveCrossroads()
-        println()
-    }
+    fun part1() = 1
 
-    fun part2() = 2
+    fun part2()   =  solveCrossroads()
 
-
-    private fun solveCrossroads() {
+    private fun solveCrossroads():Int {
         val slopes = board.keys.filter { point -> board[point] in listOf('<', '>', 'v', '^') } + start + end
         val junctions = board.keys.filter { point ->
             val tile = board[point]!!
@@ -47,14 +43,11 @@ class Day23(input: List<String>) {
         } + start + end
 
         val slopPaths = junctions.associateWith { a -> solveSlope(a, junctions) }
-//        val a = slopPaths[Point(1, 0)]!![0]!!
-        //println(junctions)
-        //printPath(listOf(Point(13, 8)))
-
-        solve(slopPaths)
+        
+        return solve(slopPaths)
     }
 
-    private fun solve(slopePaths: Map<Point, List<SlopePath>>) {
+    private fun solve(slopePaths: Map<Point, List<SlopePath>>):Int {
         val startPath = Path(start, setOf(start))
 
         val paths = mutableListOf(startPath)
@@ -80,6 +73,7 @@ class Day23(input: List<String>) {
                 }
             }
         }
+        return maxCounter
     }
 
     private fun solveSlope(start: Point, other: List<Point>): List<SlopePath> {
@@ -100,7 +94,7 @@ class Day23(input: List<String>) {
                     val newTile = board[neighbour]
                     newTile != null && newTile != '#'
                 }
-
+            
             neighbours.forEach { neighbour ->
                 if (!path.points.contains(neighbour)) {
 

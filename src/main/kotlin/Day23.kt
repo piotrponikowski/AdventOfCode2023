@@ -1,3 +1,5 @@
+import java.math.BigInteger
+
 class Day23(input: List<String>) {
 
     private val board =
@@ -5,7 +7,7 @@ class Day23(input: List<String>) {
 
     private val forestPoints = board.keys.filter { point -> board[point]!! == '#' }.toSet()
     private val walkablePoints = (board.keys - forestPoints).toSet()
-    
+
     private val maxY = board.keys.maxOf { point -> point.y }
     private val start = board.keys.first { point -> point.y == 0 && board[point]!! == '.' }
     private val end = board.keys.first { point -> point.y == maxY && board[point]!! == '.' }
@@ -24,11 +26,11 @@ class Day23(input: List<String>) {
 
     private fun solve(climbSlopes: Boolean): Int {
         val junctions = findJunctions()
-        val routes = junctions.associateWith { junction -> calculateRoutes(junction, junctions, climbSlopes) }
+        val routes = calculateRoutes(junctions, climbSlopes)
         return calculateMaxPath(routes)
     }
 
-    private fun findJunctions(): List<Point> {
+    private fun findJunctions(): List<Junction> {
         val junctions = walkablePoints.filter { point ->
             val neighbours = Direction.entries
                 .map { direction -> point + direction }
@@ -38,53 +40,72 @@ class Day23(input: List<String>) {
             neighbours.size > 2
         }
 
-        return junctions + start + end
+        val allJunctions = (listOf(start) + junctions + listOf(end))
+
+        return allJunctions.mapIndexed { index, position -> Junction(index, position) }
     }
 
-    private fun calculateRoutes(start: Point, other: List<Point>, climbSlopes: Boolean): List<Route> {
-        val startPath = Path(start, setOf(start))
+    private fun calculateRoutes(junctions: List<Junction>, climbSlopes: Boolean): Map<Junction, List<Route>> {
+        val positions = junctions.associateBy { junction -> junction.position }
+        val routes = mutableMapOf<Junction, List<Route>>()
 
-        val paths = mutableListOf(startPath)
-        val validPaths = mutableListOf<Path>()
+        positions.keys.forEach { position ->
+            val startPath = Path(position, setOf(position))
 
-        while (paths.isNotEmpty()) {
-            val path = paths.removeFirst()
-            val tile = if(climbSlopes) '.' else board[path.currentPosition]!!
+            val paths = mutableListOf(startPath)
+            val validPaths = mutableListOf<Path>()
 
-            val neighbours = slopes[tile]!!
-                .map { direction -> path.currentPosition + direction }
-                .filter { neighbour -> neighbour in walkablePoints }
+            while (paths.isNotEmpty()) {
+                val path = paths.removeFirst()
+                val tile = if (climbSlopes) '.' else board[path.currentPosition]!!
 
-            neighbours.forEach { neighbour ->
-                if (!path.points.contains(neighbour)) {
-                    val newPath = Path(neighbour, path.points + neighbour, path.distance + 1)
-                    if (other.contains(neighbour)) {
-                        validPaths += newPath
-                    } else {
-                        paths += newPath
+                val neighbours = slopes[tile]!!
+                    .map { direction -> path.currentPosition + direction }
+                    .filter { neighbour -> neighbour in walkablePoints }
+
+                neighbours.forEach { neighbour ->
+                    if (!path.points.contains(neighbour)) {
+                        val newPath = Path(neighbour, path.points + neighbour)
+                        if (positions.contains(neighbour)) {
+                            validPaths += newPath
+                        } else {
+                            paths += newPath
+                        }
                     }
                 }
             }
+
+            val start = positions[position]!!
+            routes[start] = validPaths.map { path ->
+                val end = positions[path.currentPosition]!!
+                val distance = path.points.size - 1
+
+                Route(start, end, distance)
+            }
         }
 
-        return validPaths.map { path -> Route(start, path.currentPosition, path.distance) }
+        return routes
     }
 
-    private fun calculateMaxPath(routes: Map<Point, List<Route>>): Int {
-        val startPath = Path(start, setOf(start))
+    private fun calculateMaxPath(routes: Map<Junction, List<Route>>): Int {
+        val positions = routes.keys.associateBy { junction -> junction.position }
+        val startJunction = positions[start]!!
+        val endJunction = positions[end]!!
+
+        val startPath = MaxPath(startJunction, BigInteger.ZERO.setBit(startJunction.id))
 
         val paths = mutableListOf(startPath)
         var maxCounter = 0
 
         while (paths.isNotEmpty()) {
             val path = paths.removeLast()
-            val possibleRoutes = routes[path.currentPosition]!!
+            val possibleRoutes = routes[path.currentJunction]!!
 
             possibleRoutes.forEach { route ->
-                if (!path.points.contains(route.end)) {
-                    val newPath = Path(route.end, path.points + route.end, path.distance + route.distance)
+                if (!path.visited.testBit(route.end.id)) {
+                    val newPath = MaxPath(route.end, path.visited.setBit(route.end.id), path.distance + route.distance)
 
-                    if (newPath.currentPosition == end) {
+                    if (newPath.currentJunction == endJunction) {
                         if (newPath.distance > maxCounter) {
                             maxCounter = newPath.distance
                         }
@@ -98,9 +119,13 @@ class Day23(input: List<String>) {
         return maxCounter
     }
 
-    data class Route(val start: Point, val end: Point, val distance: Int)
+    data class MaxPath(val currentJunction: Junction, val visited: BigInteger, val distance: Int = 0)
 
-    data class Path(val currentPosition: Point, val points: Set<Point>, val distance: Int = 0)
+    data class Route(val start: Junction, val end: Junction, val distance: Int)
+
+    data class Path(val currentPosition: Point, val points: Set<Point>)
+
+    data class Junction(val id: Int, val position: Point)
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)

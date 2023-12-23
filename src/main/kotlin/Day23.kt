@@ -1,3 +1,5 @@
+import kotlin.math.max
+
 class Day23(input: List<String>) {
 
     private val board = input
@@ -10,10 +12,10 @@ class Day23(input: List<String>) {
     private val end = board.keys.first { point -> point.y == maxY && board[point]!! == '.' }
 
     private val directions = mapOf(
-        '>' to listOf(Direction.R),
-        '<' to listOf(Direction.L),
-        'v' to listOf(Direction.D),
-        '^' to listOf(Direction.U),
+        '>' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
+        '<' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
+        'v' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
+        '^' to listOf(Direction.L, Direction.R, Direction.U, Direction.D),
         '.' to listOf(Direction.L, Direction.R, Direction.U, Direction.D)
     )
 
@@ -27,47 +29,69 @@ class Day23(input: List<String>) {
 
     private fun solveCrossroads() {
         val slopes = board.keys.filter { point -> board[point] in listOf('<', '>', 'v', '^') } + start + end
-        val slopPaths = slopes.associateWith { a -> solveSlope(a, slopes) }
+        val junctions = board.keys.filter { point ->
+            val tile = board[point]!!
+
+            if (tile != '#') {
+                val neighbours = directions[tile]!!
+                    .map { direction -> point + direction }
+                    .filter { neighbour ->
+                        val newTile = board[neighbour]
+                        newTile != null && newTile != '#'
+                    }
+
+                neighbours.size > 2
+            } else {
+                false
+            }
+        }  + start + end
         
-        val a = slopPaths.filter { it.key.x == 18 && it.key.y == 19  }
+        val slopPaths = junctions.associateWith { a -> solveSlope(a, junctions) }
+//        val a = slopPaths[Point(1, 0)]!![0]!!
+        //println(junctions)
+        //printPath(listOf(Point(13, 8)))
         
         solve(slopPaths)
     }
 
     private fun solve(slopePaths: Map<Point, List<SlopePath>>) {
-        val startPath = Path(start, listOf(start))
+        val startPath = Path(start, setOf(start))
 
         val paths = mutableListOf(startPath)
         val visitedPaths = mutableSetOf(startPath)
-        val finishedPaths = mutableListOf<Path>()
+
+        var maxCounter = 0
+
+        //6498
 
         while (paths.isNotEmpty()) {
-            val path = paths.removeFirst()
+            val path = paths.removeLast()
+
+            //println(path.position)
             val possiblePaths = slopePaths[path.position]!!
 
             possiblePaths.forEach { nextPath ->
-                if(!path.points.contains(nextPath.end) && !path.points.contains(nextPath.relevant[0]) ) {
-                    val newPath = path.merge(nextPath.end, nextPath.relevant, nextPath.counter)
+                if (!path.points.contains(nextPath.end) ) {
+                    val newPath = path.merge(nextPath.end, nextPath.counter)
 
-                    if(newPath.position == end) {
-                        finishedPaths += newPath
+                    if (newPath.position == end) {
+                        if (newPath.counter > maxCounter) {
+                            maxCounter = newPath.counter
+                            println(maxCounter)
+                        }
                     } else {
                         paths += newPath
                         visitedPaths += newPath
-                    } 
+                    }
                 }
             }
         }
-
-        val a = finishedPaths.filter { it.position == end }.maxBy { it.counter }
-        printPath(a)
-        println(a.counter)
         
         println()
     }
 
     private fun solveSlope(start: Point, other: List<Point>): List<SlopePath> {
-        val startPath = Path(start, listOf(start))
+        val startPath = Path(start, setOf(start))
 
         val paths = mutableListOf(startPath)
         val visitedPaths = mutableSetOf(startPath)
@@ -102,14 +126,14 @@ class Day23(input: List<String>) {
             }
         }
 
-        return finishedPaths.map { path -> SlopePath(start, path.position, path.points.takeLast(2), path.counter) }
+        return finishedPaths.map { path -> SlopePath(start, path.position, path.counter) }
     }
 
-    private fun printPath(path: Path) {
+    private fun printPath(path: List<Point>) {
         (0..maxY).forEach { y ->
             (0..maxX).forEach { x ->
                 val point = Point(x, y)
-                val visited = path.points.contains(point)
+                val visited = path.contains(point)
                 if (visited) {
                     print('O')
                 } else {
@@ -120,14 +144,13 @@ class Day23(input: List<String>) {
         }
     }
 
-    data class SlopePath(val start: Point, val end: Point, val relevant: List<Point>, val counter: Int)
+    data class SlopePath(val start: Point, val end: Point, val counter: Int)
 
-    data class Path(val position: Point, val points: List<Point>, val counter: Int = 0) {
+    data class Path(val position: Point, val points: Set<Point>, val counter: Int = 0) {
         fun go(newPosition: Point) = Path(newPosition, points + newPosition, counter + 1)
-        fun merge(newPosition: Point, relevant:List<Point>, newCounter: Int) = 
-            Path(newPosition, points + relevant, counter + newCounter)
+        fun merge(newPosition: Point, newCounter: Int) =
+            Path(newPosition, points+newPosition, counter + newCounter)
     }
-
 
     data class Point(val x: Int, val y: Int) {
         operator fun plus(other: Direction) = Point(x + other.x, y + other.y)

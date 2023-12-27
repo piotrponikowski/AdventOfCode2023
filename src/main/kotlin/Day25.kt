@@ -1,66 +1,101 @@
+import java.lang.IllegalStateException
+
 class Day25(input: List<String>) {
 
     private val connections = input.flatMap { line -> Connection.parse(line) }.toSet()
 
-    private val components = connections
-        .groupBy { connection -> connection.name1 }
-        .map { (a, b) -> a to b.map { it.name2 }.toSet() }
-        .toMap()
+    private val moduleNames = connections.flatMap { connection -> connection.modules }.toSet()
 
-    private val componentNames = components.keys
+    fun part1(): Int {
+        val connectionCounter = mutableMapOf<Connection, Int>()
+        val allModules = calculateModules(connections)
 
-    fun part1() {
+        (1..5000).forEach { _ ->
+            val path = randomPath(allModules)
+            val connections = path.modules.windowed(2)
+                .map { (pathName1, pathName2) -> Connection(setOf(pathName1, pathName2)) }
 
-        val distances = componentNames.map { component -> component to calculateDistance(component) }.toMap()
-        val maxDistances = distances.map { (a, b) -> a to b.map { it.distance }.max()  }
+            connections.forEach { connection ->
+                connectionCounter[connection] = (connectionCounter[connection] ?: 0) + 1
+            }
+        }
 
-        distances.forEach { println(it) }
-        println()
-        val a = maxDistances.sortedBy { it.second }
-        
-        
-        println(a)
+        val connectionsToRemove = connectionCounter.toList()
+            .sortedBy { (_, count) -> -count }.take(3)
+            .map { (connection, _) -> connection }.toSet()
+
+        val newConnections = connections - connectionsToRemove
+        val newModules = calculateModules(newConnections)
+
+        return calculateSize(newConnections, newModules)
     }
 
-    var i = 0
-    private fun calculateDistance(start: String): List<Path> {
-        i++
-        println(i)
-        var distance = 0
-        val visited = mutableListOf<String>()
+    private fun calculateSize(connections: Set<Connection>, modules: Map<String, List<String>>): Int {
+        val startModule = connections.first().modules.first()
 
-        val startingPath = Path(start, start, 0)
+        val modulesToCheck = mutableListOf(startModule)
+        val visited = mutableSetOf(startModule)
 
-        val toCheck = mutableListOf(startingPath)
-        val result = mutableListOf(startingPath)
+        while (modulesToCheck.isNotEmpty()) {
+            val module = modulesToCheck.removeFirst()
 
-        while (toCheck.isNotEmpty()) {
-            distance += 1
-            val swap = mutableListOf<Path>()
+            val nextModules = modules[module]!!
+            nextModules.forEach { nextModule ->
+                if (nextModule !in visited) {
+                    modulesToCheck += nextModule
+                    visited += nextModule
+                }
+            }
+        }
 
-            toCheck.forEach { current ->
-                val others = components[current.end]!!
+        val visitedCount = visited.size
+        val notVisitedCount = modules.keys.size - visitedCount
+        return visitedCount * notVisitedCount
+    }
 
-                others.forEach { newEnd ->
-                    if (newEnd !in visited) {
-                        val newPath = Path(start, newEnd, distance)
-                        swap += newPath
-                        result += newPath
-                        visited += newPath.end
+    private fun randomPath(modules: Map<String, List<String>>): Path {
+        val moduleName1 = moduleNames.random()
+        val moduleName2 = moduleNames.filter { moduleName -> moduleName != moduleName1 }.random()
+
+        return calculatePath(moduleName1, moduleName2, modules)
+    }
+
+    private fun calculatePath(start: String, end: String, modules: Map<String, List<String>>): Path {
+        val paths = mutableListOf(Path(listOf(start)))
+        val visited = mutableSetOf(start)
+
+        while (paths.isNotEmpty()) {
+            val path = paths.removeFirst()
+
+            val nextModules = modules[path.modules.last()]!!
+            nextModules.forEach { nextModule ->
+                if (nextModule !in visited) {
+                    visited += nextModule
+                    val nextPath = Path(path.modules + nextModule)
+
+                    if (nextModule == end) {
+                        return nextPath
+                    } else {
+                        paths += nextPath
                     }
                 }
             }
-            
-            toCheck.clear()
-            toCheck += swap
         }
 
-        return result
+        throw IllegalStateException()
     }
 
-    data class Path(val start: String, val end: String, val distance: Int)
+    private fun calculateModules(connections: Set<Connection>) = moduleNames
+        .associateWith { moduleName ->
+            connections
+                .filter { connection -> moduleName in connection.modules }
+                .flatMap { connection -> connection.modules }
+                .filter { otherName -> otherName != moduleName }
+        }
 
-    data class Connection(val name1: String, val name2: String) {
+    data class Path(val modules: List<String>)
+
+    data class Connection(val modules: Set<String>) {
 
         companion object {
             fun parse(input: String): List<Connection> {
@@ -68,16 +103,8 @@ class Day25(input: List<String>) {
                 val name = components.first()
                 val others = components.drop(1)
 
-                return others.flatMap { other -> listOf(Connection(name, other), Connection(other, name)) }
+                return others.map { other -> Connection(setOf(name, other)) }
             }
         }
     }
-}
-
-fun main() {
-//    val input = readText("day25.txt", true)
-    val input = readLines("day25.txt")
-
-    val result = Day25(input).part1()
-    println(result)
 }

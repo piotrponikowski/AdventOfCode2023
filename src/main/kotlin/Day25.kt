@@ -8,10 +8,10 @@ class Day25(input: List<String>) {
 
     fun part1(): Int {
         val connectionCounter = mutableMapOf<Connection, Int>()
-        val allModules = calculateModules(connections)
+        val modules = calculateModules(connections)
 
-        (1..5000).forEach { _ ->
-            val path = randomPath(allModules)
+        (1..10000).forEach { _ ->
+            val path = randomPath(modules)
             val connections = path.modules.windowed(2)
                 .map { (pathName1, pathName2) -> Connection(setOf(pathName1, pathName2)) }
 
@@ -50,6 +50,7 @@ class Day25(input: List<String>) {
 
         val visitedCount = visited.size
         val notVisitedCount = modules.keys.size - visitedCount
+
         return visitedCount * notVisitedCount
     }
 

@@ -55,9 +55,7 @@ class Day25(input: List<String>) {
     }
 
     private fun randomPath(modules: Map<String, List<String>>): Path {
-        val moduleName1 = moduleNames.random()
-        val moduleName2 = moduleNames.filter { moduleName -> moduleName != moduleName1 }.random()
-
+        val (moduleName1, moduleName2) = moduleNames.shuffled().take(2)
         return calculatePath(moduleName1, moduleName2, modules)
     }
 

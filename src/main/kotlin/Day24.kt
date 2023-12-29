@@ -29,7 +29,7 @@ class Day24(input: List<String>) {
         val rockVelocity = findRockVelocity()
         println("rockVelocity = $rockVelocity")
     }
-    
+
     private fun findRockVelocity(): Point3d {
         val scanRange = (-500L..500L)
 
@@ -40,31 +40,21 @@ class Day24(input: List<String>) {
 
         scanRange.forEach { x ->
             scanRange.forEach { y ->
-                val velocityXY = Point2d(x, y)
-                val resultXY = validateRockVelocity(hailstonesXY, velocityXY)
-                if (resultXY) {
-                    println("XY valid: $x, $y")
+                val validXY = validateRockVelocity(hailstonesXY, Point2d(x, y))
 
+                if (validXY) {
                     scanRange.forEach { z ->
+                        val validXZ = validateRockVelocity(hailstonesXZ, Point2d(x, z))
+                        val validYZ = validateRockVelocity(hailstonesYZ, Point2d(y, z))
 
-                        if (x == -3L && y == 1L && z == 2L) {
-                            println()
-                        }
-
-                        val velocityXZ = Point2d(x, z)
-                        val resultXZ = validateRockVelocity(hailstonesXZ, velocityXZ)
-
-                        val velocityYZ = Point2d(y, z)
-                        val resultYZ = validateRockVelocity(hailstonesYZ, velocityYZ)
-
-                        if(resultYZ  && resultXZ) {
+                        if (validYZ && validXZ) {
                             return Point3d(x, y, z)
                         }
                     }
                 }
             }
         }
-        
+
         throw IllegalStateException()
     }
 

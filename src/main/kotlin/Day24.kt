@@ -118,8 +118,8 @@ class Day24(input: List<String>) {
             return null
         }
 
-        val tNumerator = v2.y * (p1.x - p2.x) - v2.x * (p1.y - p2.y)
-        val sNumerator = v1.y * (p1.x - p2.x) - v1.x * (p1.y - p2.y)
+        val tNumerator = (v2.y * (p1.x - p2.x) - v2.x * (p1.y - p2.y)).setScale(2)
+        val sNumerator = (v1.y * (p1.x - p2.x) - v1.x * (p1.y - p2.y)).setScale(2)
 
         val t = tNumerator / denominator
         val s = sNumerator / denominator
@@ -135,8 +135,8 @@ class Day24(input: List<String>) {
     }
 
     private fun inCollisionRange(collision: Collision): Boolean {
-        val validX = collision.x.toLong() >= collisionRange.first && collision.x.toLong() <= collisionRange.last
-        val validY = collision.y.toLong() >= collisionRange.first && collision.y.toLong() <= collisionRange.last
+        val validX = collision.x.toDouble() >= collisionRange.first && collision.x.toDouble() <= collisionRange.last
+        val validY = collision.y.toDouble() >= collisionRange.first && collision.y.toDouble() <= collisionRange.last
         return validX && validY
     }
 

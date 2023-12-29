@@ -118,11 +118,11 @@ class Day24(input: List<String>) {
             return null
         }
 
-        val tNumerator = (v2.y * (p1.x - p2.x) - v2.x * (p1.y - p2.y)).setScale(2)
-        val sNumerator = (v1.y * (p1.x - p2.x) - v1.x * (p1.y - p2.y)).setScale(2)
+        val tNumerator = v2.y * (p1.x - p2.x) - v2.x * (p1.y - p2.y)
+        val sNumerator = v1.y * (p1.x - p2.x) - v1.x * (p1.y - p2.y)
 
-        val t = tNumerator / denominator
-        val s = sNumerator / denominator
+        val t = tNumerator.setScale(4) / denominator.setScale(4)
+        val s = sNumerator.setScale(4) / denominator.setScale(4)
 
         if (t < BigDecimal.ZERO || s < BigDecimal.ZERO) {
             return null

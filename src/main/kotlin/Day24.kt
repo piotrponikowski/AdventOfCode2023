@@ -2,16 +2,17 @@ import kotlin.math.abs
 
 class Day24(input: List<String>) {
 
-    private val hailstones = input.map { line -> Hailstone.parse(line) }
+    private val hailstones = input.map { line -> Hailstone3d.parse(line) }
     private val maxX = hailstones.maxOf { hailstone -> hailstone.position.x }
 
     private val collisionRange = if (maxX < 100) 7L..27L else 200000000000000L..400000000000000L
 
     fun part1(): Int {
         var counter = 0
+        val testHailstones = hailstones.map { hailstone -> hailstone.toHailstoneXY() }
 
-        hailstones.forEachIndexed { index1, hailstone1 ->
-            hailstones.forEachIndexed { index2, hailstone2 ->
+        testHailstones.forEachIndexed { index1, hailstone1 ->
+            testHailstones.forEachIndexed { index2, hailstone2 ->
                 if (index2 > index1) {
                     val collision = findCollision(hailstone1, hailstone2)
                     if (collision != null && inCollisionRange(collision)) {
@@ -25,38 +26,77 @@ class Day24(input: List<String>) {
     }
 
     fun part2() {
+        val rockVelocity = findRockVelocity()
+        println("rockVelocity = $rockVelocity")
+    }
+    
+    private fun findRockVelocity(): Point3d {
         val scanRange = (-500L..500L)
+
+        val testHailstones = hailstones.take(3)
+        val hailstonesXY = testHailstones.map { hailstone -> hailstone.toHailstoneXY() }
+        val hailstonesXZ = testHailstones.map { hailstone -> hailstone.toHailstoneXZ() }
+        val hailstonesYZ = testHailstones.map { hailstone -> hailstone.toHailstoneYZ() }
 
         scanRange.forEach { x ->
             scanRange.forEach { y ->
-                val velocity = Point(x, y, 0)
-                val result = validateVelocity(velocity)
-                if(result) {
-                    println("$x, $y")
+                val velocityXY = Point2d(x, y)
+                val resultXY = validateRockVelocity(hailstonesXY, velocityXY)
+                if (resultXY) {
+                    println("XY valid: $x, $y")
+
+                    scanRange.forEach { z ->
+
+                        if (x == -3L && y == 1L && z == 2L) {
+                            println()
+                        }
+
+                        val velocityXZ = Point2d(x, z)
+                        val resultXZ = validateRockVelocity(hailstonesXZ, velocityXZ)
+
+                        val velocityYZ = Point2d(y, z)
+                        val resultYZ = validateRockVelocity(hailstonesYZ, velocityYZ)
+
+                        if(resultYZ  && resultXZ) {
+                            return Point3d(x, y, z)
+                        }
+                    }
                 }
             }
         }
+        
+        throw IllegalStateException()
     }
 
-    private fun validateVelocity(velocity: Point): Boolean {
+    private fun validateRockVelocity(hailstones: List<Hailstone2d>, velocity: Point2d): Boolean {
         val (h1, h2, h3) = hailstones
 
-        val hd1 = Hailstone(h1.position, h1.velocity - velocity)
-        val hd2 = Hailstone(h2.position, h2.velocity - velocity)
-        val hd3 = Hailstone(h3.position, h3.velocity - velocity)
+        val hd1 = Hailstone2d(h1.position, h1.velocity - velocity)
+        val hd2 = Hailstone2d(h2.position, h2.velocity - velocity)
+        val hd3 = Hailstone2d(h3.position, h3.velocity - velocity)
 
         val c1 = findCollision(hd1, hd2)
         val c2 = findCollision(hd1, hd3)
         val c3 = findCollision(hd2, hd3)
 
-        if (c1 != null && c2 != null && c3 != null) {
-            return c1.matches(c2) && c1.matches(c3) && c2.matches(c3)
+        return if (c1 != null && c2 != null && c3 != null) {
+            c1.matches(c2) && c1.matches(c3) && c2.matches(c3)
+
+        } else if (c1 != null && c2 != null) {
+            c1.matches(c2)
+
+        } else if (c1 != null && c3 != null) {
+            c1.matches(c3)
+
+        } else if (c2 != null && c3 != null) {
+            c2.matches(c3)
+
         } else {
-            return false
+            false
         }
     }
 
-    private fun findCollision(h1: Hailstone, h2: Hailstone): Collision? {
+    private fun findCollision(h1: Hailstone2d, h2: Hailstone2d): Collision? {
         val p1 = h1.position
         val p2 = h2.position
 
@@ -91,11 +131,19 @@ class Day24(input: List<String>) {
         return validX && validY
     }
 
-    data class Hailstone(val position: Point, val velocity: Point) {
+    data class Hailstone2d(val position: Point2d, val velocity: Point2d)
+
+    data class Hailstone3d(val position: Point3d, val velocity: Point3d) {
+
+        fun toHailstoneXY() = Hailstone2d(Point2d(position.x, position.y), Point2d(velocity.x, velocity.y))
+
+        fun toHailstoneXZ() = Hailstone2d(Point2d(position.x, position.z), Point2d(velocity.x, velocity.z))
+
+        fun toHailstoneYZ() = Hailstone2d(Point2d(position.y, position.z), Point2d(velocity.y, velocity.z))
 
         companion object {
             private val PATTERN = Regex("""(-?\d+)""")
-            fun parse(input: String): Hailstone {
+            fun parse(input: String): Hailstone3d {
                 val numbers = PATTERN.findAll(input)
                     .map { group -> group.value }.toList()
                     .map { number -> number.toLong() }
@@ -103,13 +151,17 @@ class Day24(input: List<String>) {
                 val (x, y, z) = numbers.take(3)
                 val (vx, vy, vz) = numbers.takeLast(3)
 
-                return Hailstone(Point(x, y, z), Point(vx, vy, vz))
+                return Hailstone3d(Point3d(x, y, z), Point3d(vx, vy, vz))
             }
         }
     }
 
-    data class Point(val x: Long, val y: Long, val z: Long) {
-        operator fun minus(other: Point) = Point(x - other.x, y - other.y, z - other.z)
+    data class Point3d(val x: Long, val y: Long, val z: Long) {
+        operator fun minus(other: Point3d) = Point3d(x - other.x, y - other.y, z - other.z)
+    }
+
+    data class Point2d(val x: Long, val y: Long) {
+        operator fun minus(other: Point2d) = Point2d(x - other.x, y - other.y)
     }
 
     data class Collision(val x: Double, val y: Double) {

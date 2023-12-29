@@ -1,11 +1,11 @@
-import kotlin.math.abs
+import java.math.BigDecimal
 
 class Day24(input: List<String>) {
 
     private val hailstones = input.map { line -> Hailstone3d.parse(line) }
     private val maxX = hailstones.maxOf { hailstone -> hailstone.position.x }
 
-    private val collisionRange = if (maxX < 100) 7L..27L else 200000000000000L..400000000000000L
+    private val collisionRange = if (maxX < BigDecimal.valueOf(100)) 7L..27L else 200000000000000L..400000000000000L
 
     fun part1(): Int {
         var counter = 0
@@ -25,25 +25,26 @@ class Day24(input: List<String>) {
         return counter
     }
 
-    fun part2() {
+    fun part2(): Long {
         val rockVelocity = findRockVelocity()
-        println("rockVelocity = $rockVelocity")
+        val rockPosition = findRockPosition(rockVelocity)
+        return (rockPosition.x + rockPosition.y + rockPosition.z).toLong()
     }
 
     private fun findRockVelocity(): Point3d {
-        val scanRange = (-500L..500L)
+        val velocityScanRange = (-500L..500L).map { velocity -> velocity.toBigDecimal() }
 
         val testHailstones = hailstones.take(3)
         val hailstonesXY = testHailstones.map { hailstone -> hailstone.toHailstoneXY() }
         val hailstonesXZ = testHailstones.map { hailstone -> hailstone.toHailstoneXZ() }
         val hailstonesYZ = testHailstones.map { hailstone -> hailstone.toHailstoneYZ() }
 
-        scanRange.forEach { x ->
-            scanRange.forEach { y ->
+        velocityScanRange.forEach { x ->
+            velocityScanRange.forEach { y ->
                 val validXY = validateRockVelocity(hailstonesXY, Point2d(x, y))
 
                 if (validXY) {
-                    scanRange.forEach { z ->
+                    velocityScanRange.forEach { z ->
                         val validXZ = validateRockVelocity(hailstonesXZ, Point2d(x, z))
                         val validYZ = validateRockVelocity(hailstonesYZ, Point2d(y, z))
 
@@ -56,6 +57,24 @@ class Day24(input: List<String>) {
         }
 
         throw IllegalStateException()
+    }
+
+    private fun findRockPosition(velocity: Point3d): Point3d {
+        val (h1, h2) = hailstones.take(2)
+
+        val (x, y) = findPartialRockPosition(h1.toHailstoneXY(), h2.toHailstoneXY(), Point2d(velocity.x, velocity.y))!!
+        val (_, z) = findPartialRockPosition(h1.toHailstoneYZ(), h2.toHailstoneYZ(), Point2d(velocity.y, velocity.z))!!
+
+        return Point3d(x, y, z)
+    }
+
+    private fun findPartialRockPosition(h1: Hailstone2d, h2: Hailstone2d, velocity: Point2d): Collision? {
+        val vxy = Point2d(velocity.x, velocity.y)
+
+        val hd1 = Hailstone2d(h1.position, h1.velocity - vxy)
+        val hd2 = Hailstone2d(h2.position, h2.velocity - vxy)
+
+        return findCollision(hd1, hd2)
     }
 
     private fun validateRockVelocity(hailstones: List<Hailstone2d>, velocity: Point2d): Boolean {
@@ -95,17 +114,17 @@ class Day24(input: List<String>) {
 
         val denominator = (v1.y * v2.x) - (v1.x * v2.y)
 
-        if (denominator == 0L) {
+        if (denominator == BigDecimal.ZERO) {
             return null
         }
 
         val tNumerator = v2.y * (p1.x - p2.x) - v2.x * (p1.y - p2.y)
         val sNumerator = v1.y * (p1.x - p2.x) - v1.x * (p1.y - p2.y)
 
-        val t = tNumerator.toDouble() / denominator.toDouble()
-        val s = sNumerator.toDouble() / denominator.toDouble()
+        val t = tNumerator / denominator
+        val s = sNumerator / denominator
 
-        if (t < 0 || s < 0) {
+        if (t < BigDecimal.ZERO || s < BigDecimal.ZERO) {
             return null
         }
 
@@ -116,8 +135,8 @@ class Day24(input: List<String>) {
     }
 
     private fun inCollisionRange(collision: Collision): Boolean {
-        val validX = collision.x >= collisionRange.first && collision.x <= collisionRange.last
-        val validY = collision.y >= collisionRange.first && collision.y <= collisionRange.last
+        val validX = collision.x.toLong() >= collisionRange.first && collision.x.toLong() <= collisionRange.last
+        val validY = collision.y.toLong() >= collisionRange.first && collision.y.toLong() <= collisionRange.last
         return validX && validY
     }
 
@@ -136,7 +155,7 @@ class Day24(input: List<String>) {
             fun parse(input: String): Hailstone3d {
                 val numbers = PATTERN.findAll(input)
                     .map { group -> group.value }.toList()
-                    .map { number -> number.toLong() }
+                    .map { number -> number.toBigDecimal() }
 
                 val (x, y, z) = numbers.take(3)
                 val (vx, vy, vz) = numbers.takeLast(3)
@@ -146,21 +165,21 @@ class Day24(input: List<String>) {
         }
     }
 
-    data class Point3d(val x: Long, val y: Long, val z: Long) {
+    data class Point3d(val x: BigDecimal, val y: BigDecimal, val z: BigDecimal) {
         operator fun minus(other: Point3d) = Point3d(x - other.x, y - other.y, z - other.z)
     }
 
-    data class Point2d(val x: Long, val y: Long) {
+    data class Point2d(val x: BigDecimal, val y: BigDecimal) {
         operator fun minus(other: Point2d) = Point2d(x - other.x, y - other.y)
     }
 
-    data class Collision(val x: Double, val y: Double) {
+    data class Collision(val x: BigDecimal, val y: BigDecimal) {
         fun matches(other: Collision): Boolean {
-            return abs(x - other.x) < EPSILON && abs(y - other.y) < EPSILON
+            return (x - other.x).abs() < EPSILON && (y - other.y).abs() < EPSILON
         }
 
         companion object {
-            const val EPSILON = 0.01
+            val EPSILON: BigDecimal = BigDecimal.valueOf(0.01)
         }
     }
 }
